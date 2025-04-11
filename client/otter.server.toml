@@ -1,0 +1,3 @@
+[configuration]
+dev = "python3 ./main.py"
+proto = "./proto"

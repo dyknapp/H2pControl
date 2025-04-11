@@ -1,1 +1,8 @@
+[service]
+name = "arduino"
+version = "v1.0.0"
+
 [configuration]
+run = "python3 ./main.py" # This is the run command, can use any
+proto = "./proto" # This is the directory where the proto files are
+requests_to_influx = true # This is to send any incoming requests to influx, this goes through the manager 

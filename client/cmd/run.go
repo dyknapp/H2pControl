@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 	pb "otter.client/pb"
 )
@@ -14,8 +16,13 @@ var run = &cobra.Command{
 		ctx := cmd.Context()
 		client := ctx.Value("client").(pb.ManagerClient)
 
-		
-		Run(client, ctx)
+		v, err := LoadConfig("otter.server.toml")
+		if err != nil {
+			panic(fmt.Errorf("could not load config file: %v", err))
+		}
+		runCommand := v.GetString("configuration.run")
+
+		Run(client, ctx, runCommand)
 	},
 }
 

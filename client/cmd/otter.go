@@ -1,12 +1,17 @@
 package cmd
 
 import (
+	"bufio"
 	"context"
 	"flag"
+	"fmt"
+	"io"
 	"log"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -21,47 +26,65 @@ var (
 	language     = flag.String("language", "python", "Programming language")
 )
 
-// func init() {
-// 	// flag.Parse()
-// 	// Set up a connection to the server.
-// 	conn, err := grpc.NewClient(*addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithKeepaliveParams(keepalive.ClientParameters{
-// 		Time:                20 * time.Second,
-// 		Timeout:             10 * time.Second,
-// 		PermitWithoutStream: true,
-// 	}))
-// 	if err != nil {
-// 		log.Fatalf("did not connect: %v", err)
-// 	}
-// 	defer conn.Close()
-// 	c := pb.NewManagerClient(conn)
-
-// 	ctx := context.Background()
-// 	RegisterService(c, ctx)
-
-// 	go runHeartbeat(c)
-
-// 	GetActiveServices(c, ctx)
-// 	// Keep main alive to maintain connection
-// 	select {}
-
-// }
-
-func Run(c pb.ManagerClient, ctx context.Context) {
+func Run(c pb.ManagerClient, ctx context.Context, runCommand string) {
 	RegisterService(c, ctx)
+
+	cmdCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	cmd, err := startCommand(cmdCtx, runCommand)
+	if err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
+	defer cmd.Wait()
 
 	go runHeartbeat(c)
 
 	waitForShutdown()
+	cancel()
+}
+
+func startCommand(ctx context.Context, command string) (*exec.Cmd, error) {
+	args := strings.Fields(command)
+	if len(args) < 2 {
+		return nil, fmt.Errorf("invalid command format: need 'shell command'")
+	}
+
+	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, fmt.Errorf("stdout pipe: %w", err)
+	}
+
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return nil, fmt.Errorf("stderr pipe: %w", err)
+	}
+
+	go streamOutput(stdout, "OUT:")
+	go streamOutput(stderr, "ERR:")
+
+	if err := cmd.Start(); err != nil {
+		return nil, fmt.Errorf("start command: %w", err)
+	}
+
+	return cmd, nil
+}
+
+func streamOutput(reader io.Reader, prefix string) {
+	scanner := bufio.NewScanner(reader)
+	for scanner.Scan() {
+		fmt.Printf("%s %s\n", prefix, scanner.Text())
+	}
 }
 
 func waitForShutdown() {
-	// Create a channel to listen for OS signals (e.g., SIGINT, SIGTERM)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
 
 	log.Println("Server is running. Press Ctrl+C to stop.")
 
-	// Block until a signal is received
 	sig := <-signalChan
 	log.Printf("Received signal: %s. Shutting down...\n", sig)
 }
@@ -76,7 +99,7 @@ func RegisterService(c pb.ManagerClient, ctx context.Context) {
 	r, err := c.RegisterServer(ctx, &request)
 	if err != nil {
 		// Make this error handling nicer
-		log.Fatalf("Unable to connect to server, is the server running? %v", err)
+		log.Fatalf("Unable to connect to Otter Manager, is the  running? %v", err)
 	}
 	log.Println(r.Result)
 }
@@ -93,7 +116,7 @@ func GetActiveServices(c pb.ManagerClient, ctx context.Context) {
 func runHeartbeat(client pb.ManagerClient) {
 	for {
 
-		pong, err := client.Heartbeat(context.Background(), &pb.HeartbeatPing{}, grpc.EmptyCallOption{})
+		_, err := client.Heartbeat(context.Background(), &pb.HeartbeatPing{}, grpc.EmptyCallOption{})
 		if err != nil {
 			log.Fatalf("Failed to start heartbeat stream: %v", err)
 		}
@@ -102,14 +125,27 @@ func runHeartbeat(client pb.ManagerClient) {
 			log.Fatalf("Failed to receive heartbeat response: %v", err)
 		}
 
-		log.Printf("Received pong from server: %v", pong.Healthy)
+		// log.Printf("Received pong from server: %v", pong.Healthy)
 
 		time.Sleep(1 * time.Second)
 	}
 }
 
-func GetStubs(c pb.ManagerClient, ctx context.Context) {
-	r, err := c.GetStub(ctx, &pb.StubRequest{ServiceName: *service_name, Version: *version, Language: *language})
+type Service struct {
+	Name     string `mapstructure:"name"`
+	Version  string `mapstructure:"version"`
+	Language string `mapstructure:"language"`
+}
+
+func GetStubs(c pb.ManagerClient, ctx context.Context, dependencies []Service, language string) {
+
+	for _, dependency := range dependencies {
+		GetStub(c, ctx, dependency.Name, dependency.Version, language)
+	}
+
+}
+func GetStub(c pb.ManagerClient, ctx context.Context, service_name string, version string, language string) {
+	r, err := c.GetStub(ctx, &pb.StubRequest{ServiceName: service_name, Version: version, Language: language})
 	if err != nil {
 		log.Fatalf("could not greet: %v", err)
 	}
@@ -117,9 +153,9 @@ func GetStubs(c pb.ManagerClient, ctx context.Context) {
 	files := r.GetFiles()
 
 	dirPath := filepath.Join("stubs",
-		*service_name,
-		*language,
-		*version)
+		service_name,
+		language,
+		version)
 	for _, file := range files {
 		var filePath = filepath.Join(
 			dirPath,

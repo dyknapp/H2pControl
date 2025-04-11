@@ -1,0 +1,5 @@
+[configuration]
+language = "python"
+
+[dependencies]
+arduino = "v1"
