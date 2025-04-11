@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"archive/zip"
 	"bufio"
+	"bytes"
 	"context"
 	"flag"
 	"fmt"
@@ -20,14 +22,11 @@ import (
 )
 
 var (
-	addr         = flag.String("addr", "localhost:50051", "the address to connect to")
-	service_name = flag.String("service_name", "arduino", "Service Name")
-	version      = flag.String("version", "v1.0.0", "Package version")
-	language     = flag.String("language", "python", "Programming language")
+	addr = flag.String("addr", "localhost:50051", "the address to connect to")
 )
 
-func Run(c pb.ManagerClient, ctx context.Context, runCommand string) {
-	RegisterService(c, ctx)
+func Run(c pb.ManagerClient, ctx context.Context, runCommand string, service pb.ServiceDefinition, proto_path string) {
+	RegisterService(c, ctx, service, proto_path)
 
 	cmdCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -89,19 +88,30 @@ func waitForShutdown() {
 	log.Printf("Received signal: %s. Shutting down...\n", sig)
 }
 
-func RegisterService(c pb.ManagerClient, ctx context.Context) {
+func RegisterService(c pb.ManagerClient, ctx context.Context, service pb.ServiceDefinition, proto_dir_path string) {
 
-	request := pb.RegisterRequest{Service: &pb.ServiceDefinition{ServiceName: *service_name,
-		Version: *version,
-		File:    &pb.File{Name: "example_file", Content: []byte{0x01, 0x02, 0x03}}, // TEMP
-	}}
+	dirEntries, err := os.ReadDir(proto_dir_path)
+	if err != nil {
+		log.Fatalf("Unable to read proto dir: %v", err)
+	}
+
+	for _, entry := range dirEntries {
+		file_content, err := os.ReadFile(filepath.Join(proto_dir_path, entry.Name()))
+		if err != nil {
+			log.Fatalf("Unable to read proto file: %v", err)
+		}
+		service.ProtoFiles = append(service.ProtoFiles, &pb.File{Name: entry.Name(), Content: file_content})
+	}
+
+	request := pb.RegisterRequest{Service: &service}
 
 	r, err := c.RegisterServer(ctx, &request)
 	if err != nil {
 		// Make this error handling nicer
-		log.Fatalf("Unable to connect to Otter Manager, is the  running? %v", err)
+		log.Fatalf("Unable to connect to Otter Manager, is it running? %v", err)
 	}
 	log.Println(r.Result)
+
 }
 
 func GetActiveServices(c pb.ManagerClient, ctx context.Context) {
@@ -131,46 +141,67 @@ func runHeartbeat(client pb.ManagerClient) {
 	}
 }
 
-type Service struct {
-	Name     string `mapstructure:"name"`
-	Version  string `mapstructure:"version"`
-	Language string `mapstructure:"language"`
-}
-
-func GetStubs(c pb.ManagerClient, ctx context.Context, dependencies []Service, language string) {
+func GetStubs(c pb.ManagerClient, ctx context.Context, dependencies []pb.ServiceDefinition, language string) {
 
 	for _, dependency := range dependencies {
-		GetStub(c, ctx, dependency.Name, dependency.Version, language)
+		GetStub(c, ctx, dependency.ServiceName, dependency.Version, language)
+	}
+}
+
+func extractZipData(zipData []byte, outputDir string) error {
+	zipReader, err := zip.NewReader(bytes.NewReader(zipData), int64(len(zipData)))
+	if err != nil {
+		return err
 	}
 
+	for _, file := range zipReader.File {
+		targetPath := filepath.Join(outputDir, filepath.Clean(file.Name))
+		if err := os.MkdirAll(filepath.Dir(targetPath), 0755); err != nil {
+			return err
+		}
+
+		if err := extractFile(file, targetPath); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
+
+func extractFile(zipFile *zip.File, targetPath string) error {
+	srcFile, err := zipFile.Open()
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	dstFile, err := os.OpenFile(targetPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, zipFile.Mode())
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+
+	if _, err := io.Copy(dstFile, srcFile); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func GetStub(c pb.ManagerClient, ctx context.Context, service_name string, version string, language string) {
 	r, err := c.GetStub(ctx, &pb.StubRequest{ServiceName: service_name, Version: version, Language: language})
 	if err != nil {
-		log.Fatalf("could not greet: %v", err)
+		log.Fatalf("could not get stub file: %v", err)
 	}
-
-	files := r.GetFiles()
 
 	dirPath := filepath.Join("stubs",
 		service_name,
 		language,
 		version)
-	for _, file := range files {
-		var filePath = filepath.Join(
-			dirPath,
-			file.Name,
-		)
 
-		err := os.MkdirAll(dirPath, 0755)
-		if err != nil {
-			log.Fatalf("Failed to create directories: %v", err)
-		}
-
-		err = os.WriteFile(filePath, file.Content, 0644)
-		if err != nil {
-			log.Fatalf("Tried to write %v, but received error %v", filePath, err)
-		}
+	if err := extractZipData(r.ZipData, dirPath); err != nil {
+		log.Fatalf("Not a valid zip file %s", err)
 	}
+
 	log.Printf("Finished receiving stubs")
 }

@@ -30,7 +30,7 @@ message HeartbeatPong {
 message ServiceDefinition {
   string service_name = 1;
   string version = 2;
-  File file = 3;
+  repeated File proto_files = 3;
 }
 
 
@@ -48,10 +48,15 @@ message StubRequest {
   string language = 3; // e.g., "python", "java"
 }
 
+
+message StubResponse {
+  string name = 1;
+  bytes zip_data = 2;
+  string checksum = 3;  // Optional checksum (e.g., SHA256)
+}
+
 message File {
   string name = 1;
   bytes content = 2;
 }
-message StubResponse {
-  repeated File files = 1;  // Changed from single bytes to repeated files
-}
+

@@ -185,7 +185,7 @@ type ServiceDefinition struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ServiceName   string                 `protobuf:"bytes,1,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
 	Version       string                 `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
-	File          *File                  `protobuf:"bytes,3,opt,name=file,proto3" json:"file,omitempty"`
+	ProtoFiles    []*File                `protobuf:"bytes,3,rep,name=proto_files,json=protoFiles,proto3" json:"proto_files,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -234,9 +234,9 @@ func (x *ServiceDefinition) GetVersion() string {
 	return ""
 }
 
-func (x *ServiceDefinition) GetFile() *File {
+func (x *ServiceDefinition) GetProtoFiles() []*File {
 	if x != nil {
-		return x.File
+		return x.ProtoFiles
 	}
 	return nil
 }
@@ -389,6 +389,66 @@ func (x *StubRequest) GetLanguage() string {
 	return ""
 }
 
+type StubResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	ZipData       []byte                 `protobuf:"bytes,2,opt,name=zip_data,json=zipData,proto3" json:"zip_data,omitempty"`
+	Checksum      string                 `protobuf:"bytes,3,opt,name=checksum,proto3" json:"checksum,omitempty"` // Optional checksum (e.g., SHA256)
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StubResponse) Reset() {
+	*x = StubResponse{}
+	mi := &file_otter_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StubResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StubResponse) ProtoMessage() {}
+
+func (x *StubResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_otter_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StubResponse.ProtoReflect.Descriptor instead.
+func (*StubResponse) Descriptor() ([]byte, []int) {
+	return file_otter_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *StubResponse) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *StubResponse) GetZipData() []byte {
+	if x != nil {
+		return x.ZipData
+	}
+	return nil
+}
+
+func (x *StubResponse) GetChecksum() string {
+	if x != nil {
+		return x.Checksum
+	}
+	return ""
+}
+
 type File struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -399,7 +459,7 @@ type File struct {
 
 func (x *File) Reset() {
 	*x = File{}
-	mi := &file_otter_proto_msgTypes[8]
+	mi := &file_otter_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -411,7 +471,7 @@ func (x *File) String() string {
 func (*File) ProtoMessage() {}
 
 func (x *File) ProtoReflect() protoreflect.Message {
-	mi := &file_otter_proto_msgTypes[8]
+	mi := &file_otter_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -424,7 +484,7 @@ func (x *File) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use File.ProtoReflect.Descriptor instead.
 func (*File) Descriptor() ([]byte, []int) {
-	return file_otter_proto_rawDescGZIP(), []int{8}
+	return file_otter_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *File) GetName() string {
@@ -441,50 +501,6 @@ func (x *File) GetContent() []byte {
 	return nil
 }
 
-type StubResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Files         []*File                `protobuf:"bytes,1,rep,name=files,proto3" json:"files,omitempty"` // Changed from single bytes to repeated files
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *StubResponse) Reset() {
-	*x = StubResponse{}
-	mi := &file_otter_proto_msgTypes[9]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *StubResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*StubResponse) ProtoMessage() {}
-
-func (x *StubResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_otter_proto_msgTypes[9]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use StubResponse.ProtoReflect.Descriptor instead.
-func (*StubResponse) Descriptor() ([]byte, []int) {
-	return file_otter_proto_rawDescGZIP(), []int{9}
-}
-
-func (x *StubResponse) GetFiles() []*File {
-	if x != nil {
-		return x.Files
-	}
-	return nil
-}
-
 var File_otter_proto protoreflect.FileDescriptor
 
 const file_otter_proto_rawDesc = "" +
@@ -495,11 +511,12 @@ const file_otter_proto_rawDesc = "" +
 	"\bservices\x18\x01 \x03(\v2\x18.otter.ServiceDefinitionR\bservices\"\x0f\n" +
 	"\rHeartbeatPing\")\n" +
 	"\rHeartbeatPong\x12\x18\n" +
-	"\ahealthy\x18\x01 \x01(\bR\ahealthy\"q\n" +
+	"\ahealthy\x18\x01 \x01(\bR\ahealthy\"~\n" +
 	"\x11ServiceDefinition\x12!\n" +
 	"\fservice_name\x18\x01 \x01(\tR\vserviceName\x12\x18\n" +
-	"\aversion\x18\x02 \x01(\tR\aversion\x12\x1f\n" +
-	"\x04file\x18\x03 \x01(\v2\v.otter.FileR\x04file\"E\n" +
+	"\aversion\x18\x02 \x01(\tR\aversion\x12,\n" +
+	"\vproto_files\x18\x03 \x03(\v2\v.otter.FileR\n" +
+	"protoFiles\"E\n" +
 	"\x0fRegisterRequest\x122\n" +
 	"\aservice\x18\x01 \x01(\v2\x18.otter.ServiceDefinitionR\aservice\"*\n" +
 	"\x10RegisterResponse\x12\x16\n" +
@@ -507,12 +524,14 @@ const file_otter_proto_rawDesc = "" +
 	"\vStubRequest\x12!\n" +
 	"\fservice_name\x18\x01 \x01(\tR\vserviceName\x12\x18\n" +
 	"\aversion\x18\x02 \x01(\tR\aversion\x12\x1a\n" +
-	"\blanguage\x18\x03 \x01(\tR\blanguage\"4\n" +
+	"\blanguage\x18\x03 \x01(\tR\blanguage\"Y\n" +
+	"\fStubResponse\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x19\n" +
+	"\bzip_data\x18\x02 \x01(\fR\azipData\x12\x1a\n" +
+	"\bchecksum\x18\x03 \x01(\tR\bchecksum\"4\n" +
 	"\x04File\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
-	"\acontent\x18\x02 \x01(\fR\acontent\"1\n" +
-	"\fStubResponse\x12!\n" +
-	"\x05files\x18\x01 \x03(\v2\v.otter.FileR\x05files2\x8d\x02\n" +
+	"\acontent\x18\x02 \x01(\fR\acontent2\x8d\x02\n" +
 	"\aManager\x122\n" +
 	"\aGetStub\x12\x12.otter.StubRequest\x1a\x13.otter.StubResponse\x12A\n" +
 	"\x0eRegisterServer\x12\x16.otter.RegisterRequest\x1a\x17.otter.RegisterResponse\x127\n" +
@@ -542,27 +561,26 @@ var file_otter_proto_goTypes = []any{
 	(*RegisterRequest)(nil),         // 5: otter.RegisterRequest
 	(*RegisterResponse)(nil),        // 6: otter.RegisterResponse
 	(*StubRequest)(nil),             // 7: otter.StubRequest
-	(*File)(nil),                    // 8: otter.File
-	(*StubResponse)(nil),            // 9: otter.StubResponse
+	(*StubResponse)(nil),            // 8: otter.StubResponse
+	(*File)(nil),                    // 9: otter.File
 }
 var file_otter_proto_depIdxs = []int32{
 	4, // 0: otter.ActiveServicesResponse.services:type_name -> otter.ServiceDefinition
-	8, // 1: otter.ServiceDefinition.file:type_name -> otter.File
+	9, // 1: otter.ServiceDefinition.proto_files:type_name -> otter.File
 	4, // 2: otter.RegisterRequest.service:type_name -> otter.ServiceDefinition
-	8, // 3: otter.StubResponse.files:type_name -> otter.File
-	7, // 4: otter.Manager.GetStub:input_type -> otter.StubRequest
-	5, // 5: otter.Manager.RegisterServer:input_type -> otter.RegisterRequest
-	2, // 6: otter.Manager.Heartbeat:input_type -> otter.HeartbeatPing
-	0, // 7: otter.Manager.GetActiveServices:input_type -> otter.ActivateServicesRequest
-	9, // 8: otter.Manager.GetStub:output_type -> otter.StubResponse
-	6, // 9: otter.Manager.RegisterServer:output_type -> otter.RegisterResponse
-	3, // 10: otter.Manager.Heartbeat:output_type -> otter.HeartbeatPong
-	1, // 11: otter.Manager.GetActiveServices:output_type -> otter.ActiveServicesResponse
-	8, // [8:12] is the sub-list for method output_type
-	4, // [4:8] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	7, // 3: otter.Manager.GetStub:input_type -> otter.StubRequest
+	5, // 4: otter.Manager.RegisterServer:input_type -> otter.RegisterRequest
+	2, // 5: otter.Manager.Heartbeat:input_type -> otter.HeartbeatPing
+	0, // 6: otter.Manager.GetActiveServices:input_type -> otter.ActivateServicesRequest
+	8, // 7: otter.Manager.GetStub:output_type -> otter.StubResponse
+	6, // 8: otter.Manager.RegisterServer:output_type -> otter.RegisterResponse
+	3, // 9: otter.Manager.Heartbeat:output_type -> otter.HeartbeatPong
+	1, // 10: otter.Manager.GetActiveServices:output_type -> otter.ActiveServicesResponse
+	7, // [7:11] is the sub-list for method output_type
+	3, // [3:7] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_otter_proto_init() }

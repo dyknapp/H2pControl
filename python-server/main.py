@@ -34,7 +34,7 @@ class GreetingService(GreeterBase):
 
 async def main():
     server = Server([GreetingService()])
-    await server.start("127.0.0.1", 50052)
+    await server.start("127.0.0.1", 50055)
     logger.info("Server started on 127.0.0.1:50052")
     await server.wait_closed()
     logger.info("Server shutdown complete")

@@ -21,8 +21,14 @@ var run = &cobra.Command{
 			panic(fmt.Errorf("could not load config file: %v", err))
 		}
 		runCommand := v.GetString("configuration.run")
+		protoPath := v.GetString("configuration.proto")
 
-		Run(client, ctx, runCommand)
+		service := pb.ServiceDefinition{
+			ServiceName: v.GetString("service.name"),
+			Version:     v.GetString("service.version"),
+		}
+
+		Run(client, ctx, runCommand, service, protoPath)
 	},
 }
 

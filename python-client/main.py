@@ -4,7 +4,7 @@ from stubs.arduino.python.v1.arduino import GreeterStub, HelloRequest
 import grpc
 async def main():
     # Use async context manager for proper cleanup
-  channel = grpc.insecure_channel("localhost:50052")
+  channel = grpc.insecure_channel("localhost:50055")
   service = GreeterStub(channel)
   response = service.say_hello(HelloRequest(name="Tijmen"))
   print(response.message)

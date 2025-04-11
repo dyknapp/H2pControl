@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/spf13/viper"
+	pb "otter.client/pb"
 )
 
 func LoadConfig(configName string) (*viper.Viper, error) {
@@ -29,14 +30,14 @@ func LoadConfig(configName string) (*viper.Viper, error) {
 	return v, nil
 }
 
-func GetDependencies(v *viper.Viper) []Service {
+func GetDependencies(v *viper.Viper) []pb.ServiceDefinition {
 	deps := v.GetStringMap("dependencies")
 
-	var dependencies []Service
+	var dependencies []pb.ServiceDefinition
 
 	for name, version := range deps {
 		if versionStr, ok := version.(string); ok {
-			dependencies = append(dependencies, Service{Name: name, Version: versionStr})
+			dependencies = append(dependencies, pb.ServiceDefinition{ServiceName: name, Version: versionStr})
 		} else {
 			panic(fmt.Errorf("invalid type for version: expected string but got %T", version))
 		}
