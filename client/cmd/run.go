@@ -23,12 +23,13 @@ var run = &cobra.Command{
 		runCommand := v.GetString("configuration.run")
 		protoPath := v.GetString("configuration.proto")
 
-		service := pb.ServiceDefinition{
-			ServiceName: v.GetString("service.name"),
-			Version:     v.GetString("service.version"),
+		service := pb.ServerDefinition{
+			Port:       v.GetString("configuration.port"),
+			ServerName: v.GetString("server.name"),
+			Version:    v.GetString("server.version"),
 		}
 
-		Run(client, ctx, runCommand, service, protoPath)
+		Run(client, ctx, runCommand, &service, protoPath)
 	},
 }
 

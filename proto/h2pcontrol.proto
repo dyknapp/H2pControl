@@ -11,39 +11,58 @@ package h2pcontrol;
 service Manager {
   rpc GetStub(StubRequest) returns (StubResponse);
   rpc RegisterServer(RegisterRequest) returns (RegisterResponse);
-  rpc Heartbeat(HeartbeatPing) returns (HeartbeatPong);
-  rpc GetActiveServices(ActivateServicesRequest) returns (ActiveServicesResponse);
+  rpc Heartbeat(Empty) returns (HeartbeatPong);
+
+  rpc FetchServers(Empty) returns (FetchServersResponse);
+  rpc FetchSpecificServer(FetchSpecificServerRequest) returns (FetchSpecificServerResponse);
 }
 
-message ActivateServicesRequest {}
+message Empty {}
 
-message ActiveServicesResponse {
-  repeated ServiceDefinition services = 1;
-}
-
-message HeartbeatPing {}
 
 message HeartbeatPong {
   bool healthy = 1;
 }
 
-message ServiceDefinition {
-  string service_name = 1;
-  string version = 2;
-  repeated File proto_files = 3;
+message ServerDefinition {
+  string server_name = 1;
+  string port = 2;
+  string version = 3;
+  repeated File proto_files = 4;
 }
 
 
 message RegisterRequest {
-  ServiceDefinition service = 1;
+  ServerDefinition server = 1;
 }
 
 message RegisterResponse {
   string result = 1;
 }
 
+message FetchServerDefinition {
+  string name = 1;
+  string description = 2;
+  string addr = 3;
+}
+
+message FetchServersResponse {
+  repeated FetchServerDefinition servers = 1; 
+}
+
+message FetchSpecificServerRequest {
+  string addr = 1;
+}
+
+message FetchSpecificServerResponse {
+  FetchServerDefinition server_definition = 1;
+  string proto = 2;
+}
+
+
+
 message StubRequest {
-  string service_name = 1;
+  string Server_name = 1;
   string version = 2;
   string language = 3; // e.g., "python", "java"
 }

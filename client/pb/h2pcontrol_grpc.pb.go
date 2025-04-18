@@ -19,10 +19,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Manager_GetStub_FullMethodName           = "/h2pcontrol.Manager/GetStub"
-	Manager_RegisterServer_FullMethodName    = "/h2pcontrol.Manager/RegisterServer"
-	Manager_Heartbeat_FullMethodName         = "/h2pcontrol.Manager/Heartbeat"
-	Manager_GetActiveServices_FullMethodName = "/h2pcontrol.Manager/GetActiveServices"
+	Manager_GetStub_FullMethodName             = "/h2pcontrol.Manager/GetStub"
+	Manager_RegisterServer_FullMethodName      = "/h2pcontrol.Manager/RegisterServer"
+	Manager_Heartbeat_FullMethodName           = "/h2pcontrol.Manager/Heartbeat"
+	Manager_FetchServers_FullMethodName        = "/h2pcontrol.Manager/FetchServers"
+	Manager_FetchSpecificServer_FullMethodName = "/h2pcontrol.Manager/FetchSpecificServer"
 )
 
 // ManagerClient is the client API for Manager service.
@@ -31,8 +32,9 @@ const (
 type ManagerClient interface {
 	GetStub(ctx context.Context, in *StubRequest, opts ...grpc.CallOption) (*StubResponse, error)
 	RegisterServer(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
-	Heartbeat(ctx context.Context, in *HeartbeatPing, opts ...grpc.CallOption) (*HeartbeatPong, error)
-	GetActiveServices(ctx context.Context, in *ActivateServicesRequest, opts ...grpc.CallOption) (*ActiveServicesResponse, error)
+	Heartbeat(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*HeartbeatPong, error)
+	FetchServers(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*FetchServersResponse, error)
+	FetchSpecificServer(ctx context.Context, in *FetchSpecificServerRequest, opts ...grpc.CallOption) (*FetchSpecificServerResponse, error)
 }
 
 type managerClient struct {
@@ -63,7 +65,7 @@ func (c *managerClient) RegisterServer(ctx context.Context, in *RegisterRequest,
 	return out, nil
 }
 
-func (c *managerClient) Heartbeat(ctx context.Context, in *HeartbeatPing, opts ...grpc.CallOption) (*HeartbeatPong, error) {
+func (c *managerClient) Heartbeat(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*HeartbeatPong, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(HeartbeatPong)
 	err := c.cc.Invoke(ctx, Manager_Heartbeat_FullMethodName, in, out, cOpts...)
@@ -73,10 +75,20 @@ func (c *managerClient) Heartbeat(ctx context.Context, in *HeartbeatPing, opts .
 	return out, nil
 }
 
-func (c *managerClient) GetActiveServices(ctx context.Context, in *ActivateServicesRequest, opts ...grpc.CallOption) (*ActiveServicesResponse, error) {
+func (c *managerClient) FetchServers(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*FetchServersResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ActiveServicesResponse)
-	err := c.cc.Invoke(ctx, Manager_GetActiveServices_FullMethodName, in, out, cOpts...)
+	out := new(FetchServersResponse)
+	err := c.cc.Invoke(ctx, Manager_FetchServers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *managerClient) FetchSpecificServer(ctx context.Context, in *FetchSpecificServerRequest, opts ...grpc.CallOption) (*FetchSpecificServerResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(FetchSpecificServerResponse)
+	err := c.cc.Invoke(ctx, Manager_FetchSpecificServer_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -89,8 +101,9 @@ func (c *managerClient) GetActiveServices(ctx context.Context, in *ActivateServi
 type ManagerServer interface {
 	GetStub(context.Context, *StubRequest) (*StubResponse, error)
 	RegisterServer(context.Context, *RegisterRequest) (*RegisterResponse, error)
-	Heartbeat(context.Context, *HeartbeatPing) (*HeartbeatPong, error)
-	GetActiveServices(context.Context, *ActivateServicesRequest) (*ActiveServicesResponse, error)
+	Heartbeat(context.Context, *Empty) (*HeartbeatPong, error)
+	FetchServers(context.Context, *Empty) (*FetchServersResponse, error)
+	FetchSpecificServer(context.Context, *FetchSpecificServerRequest) (*FetchSpecificServerResponse, error)
 	mustEmbedUnimplementedManagerServer()
 }
 
@@ -107,11 +120,14 @@ func (UnimplementedManagerServer) GetStub(context.Context, *StubRequest) (*StubR
 func (UnimplementedManagerServer) RegisterServer(context.Context, *RegisterRequest) (*RegisterResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RegisterServer not implemented")
 }
-func (UnimplementedManagerServer) Heartbeat(context.Context, *HeartbeatPing) (*HeartbeatPong, error) {
+func (UnimplementedManagerServer) Heartbeat(context.Context, *Empty) (*HeartbeatPong, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Heartbeat not implemented")
 }
-func (UnimplementedManagerServer) GetActiveServices(context.Context, *ActivateServicesRequest) (*ActiveServicesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetActiveServices not implemented")
+func (UnimplementedManagerServer) FetchServers(context.Context, *Empty) (*FetchServersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FetchServers not implemented")
+}
+func (UnimplementedManagerServer) FetchSpecificServer(context.Context, *FetchSpecificServerRequest) (*FetchSpecificServerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FetchSpecificServer not implemented")
 }
 func (UnimplementedManagerServer) mustEmbedUnimplementedManagerServer() {}
 func (UnimplementedManagerServer) testEmbeddedByValue()                 {}
@@ -171,7 +187,7 @@ func _Manager_RegisterServer_Handler(srv interface{}, ctx context.Context, dec f
 }
 
 func _Manager_Heartbeat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(HeartbeatPing)
+	in := new(Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -183,25 +199,43 @@ func _Manager_Heartbeat_Handler(srv interface{}, ctx context.Context, dec func(i
 		FullMethod: Manager_Heartbeat_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ManagerServer).Heartbeat(ctx, req.(*HeartbeatPing))
+		return srv.(ManagerServer).Heartbeat(ctx, req.(*Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Manager_GetActiveServices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ActivateServicesRequest)
+func _Manager_FetchServers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ManagerServer).GetActiveServices(ctx, in)
+		return srv.(ManagerServer).FetchServers(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Manager_GetActiveServices_FullMethodName,
+		FullMethod: Manager_FetchServers_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ManagerServer).GetActiveServices(ctx, req.(*ActivateServicesRequest))
+		return srv.(ManagerServer).FetchServers(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Manager_FetchSpecificServer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FetchSpecificServerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ManagerServer).FetchSpecificServer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Manager_FetchSpecificServer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ManagerServer).FetchSpecificServer(ctx, req.(*FetchSpecificServerRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -226,8 +260,12 @@ var Manager_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Manager_Heartbeat_Handler,
 		},
 		{
-			MethodName: "GetActiveServices",
-			Handler:    _Manager_GetActiveServices_Handler,
+			MethodName: "FetchServers",
+			Handler:    _Manager_FetchServers_Handler,
+		},
+		{
+			MethodName: "FetchSpecificServer",
+			Handler:    _Manager_FetchSpecificServer_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

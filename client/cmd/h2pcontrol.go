@@ -25,8 +25,8 @@ var (
 	addr = flag.String("addr", "localhost:50051", "the address to connect to")
 )
 
-func Run(c pb.ManagerClient, ctx context.Context, runCommand string, service pb.ServiceDefinition, proto_path string) {
-	RegisterService(c, ctx, service, proto_path)
+func Run(c pb.ManagerClient, ctx context.Context, runCommand string, server *pb.ServerDefinition, proto_path string) {
+	RegisterService(c, ctx, server, proto_path)
 
 	cmdCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -46,7 +46,7 @@ func Run(c pb.ManagerClient, ctx context.Context, runCommand string, service pb.
 func startCommand(ctx context.Context, command string) (*exec.Cmd, error) {
 	args := strings.Fields(command)
 	if len(args) < 2 {
-		return nil, fmt.Errorf("invalid command format: need 'shell command'")
+		return nil, fmt.Errorf("invalid command format %s: need 'shell command'", args)
 	}
 
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
@@ -88,7 +88,7 @@ func waitForShutdown() {
 	log.Printf("Received signal: %s. Shutting down...\n", sig)
 }
 
-func RegisterService(c pb.ManagerClient, ctx context.Context, service pb.ServiceDefinition, proto_dir_path string) {
+func RegisterService(c pb.ManagerClient, ctx context.Context, server *pb.ServerDefinition, proto_dir_path string) {
 
 	dirEntries, err := os.ReadDir(proto_dir_path)
 	if err != nil {
@@ -100,10 +100,10 @@ func RegisterService(c pb.ManagerClient, ctx context.Context, service pb.Service
 		if err != nil {
 			log.Fatalf("Unable to read proto file: %v", err)
 		}
-		service.ProtoFiles = append(service.ProtoFiles, &pb.File{Name: entry.Name(), Content: file_content})
+		server.ProtoFiles = append(server.ProtoFiles, &pb.File{Name: entry.Name(), Content: file_content})
 	}
 
-	request := pb.RegisterRequest{Service: &service}
+	request := pb.RegisterRequest{Server: server}
 
 	r, err := c.RegisterServer(ctx, &request)
 	if err != nil {
@@ -114,19 +114,10 @@ func RegisterService(c pb.ManagerClient, ctx context.Context, service pb.Service
 
 }
 
-func GetActiveServices(c pb.ManagerClient, ctx context.Context) {
-	request := pb.ActivateServicesRequest{}
-	r, err := c.GetActiveServices(ctx, &request)
-	if err != nil {
-		log.Fatalf("Unable to retreive other services from manager")
-	}
-	log.Println(r)
-}
-
 func runHeartbeat(client pb.ManagerClient) {
 	for {
 
-		_, err := client.Heartbeat(context.Background(), &pb.HeartbeatPing{}, grpc.EmptyCallOption{})
+		_, err := client.Heartbeat(context.Background(), &pb.Empty{}, grpc.EmptyCallOption{})
 		if err != nil {
 			log.Fatalf("Failed to start heartbeat stream: %v", err)
 		}
@@ -141,10 +132,10 @@ func runHeartbeat(client pb.ManagerClient) {
 	}
 }
 
-func GetStubs(c pb.ManagerClient, ctx context.Context, dependencies []pb.ServiceDefinition, language string) {
+func GetStubs(c pb.ManagerClient, ctx context.Context, dependencies []pb.ServerDefinition, language string) {
 
 	for _, dependency := range dependencies {
-		GetStub(c, ctx, dependency.ServiceName, dependency.Version, language)
+		GetStub(c, ctx, dependency.ServerName, dependency.Version, language)
 	}
 }
 
@@ -189,7 +180,7 @@ func extractFile(zipFile *zip.File, targetPath string) error {
 }
 
 func GetStub(c pb.ManagerClient, ctx context.Context, service_name string, version string, language string) {
-	r, err := c.GetStub(ctx, &pb.StubRequest{ServiceName: service_name, Version: version, Language: language})
+	r, err := c.GetStub(ctx, &pb.StubRequest{ServerName: service_name, Version: version, Language: language})
 	if err != nil {
 		log.Fatalf("could not get stub file: %v", err)
 	}

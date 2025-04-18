@@ -30,14 +30,14 @@ func LoadConfig(configName string) (*viper.Viper, error) {
 	return v, nil
 }
 
-func GetDependencies(v *viper.Viper) []pb.ServiceDefinition {
+func GetDependencies(v *viper.Viper) []pb.ServerDefinition {
 	deps := v.GetStringMap("dependencies")
 
-	var dependencies []pb.ServiceDefinition
+	var dependencies []pb.ServerDefinition
 
 	for name, version := range deps {
 		if versionStr, ok := version.(string); ok {
-			dependencies = append(dependencies, pb.ServiceDefinition{ServiceName: name, Version: versionStr})
+			dependencies = append(dependencies, pb.ServerDefinition{ServerName: name, Version: versionStr})
 		} else {
 			panic(fmt.Errorf("invalid type for version: expected string but got %T", version))
 		}
