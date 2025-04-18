@@ -1,4 +1,4 @@
-module otter.manager
+module h2pcontrol.manager
 
 go 1.23.7
 

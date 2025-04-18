@@ -1,11 +1,11 @@
 syntax = "proto3";
 
-option go_package = "otter.manager";
+option go_package = "h2pcontrol.manager";
 option java_multiple_files = true;
-option java_package = "io.otter.client";
-option java_outer_classname = "Otter";
+option java_package = "io.h2pcontrol.client";
+option java_outer_classname = "h2pcontrol";
 
-package otter;
+package h2pcontrol;
 
 
 service Manager {

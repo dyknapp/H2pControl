@@ -1,5 +1,6 @@
 import asyncio
-from stubs.arduino.python.v1.arduino import GreeterStub, HelloRequest
+# from stubs.arduino.python.v1.arduino import GreeterStub, HelloRequest
+from hpcontrol_python_server.arduino import GreeterStub, HelloRequest
 # from grpclib.client import Channel
 import grpc
 async def main():

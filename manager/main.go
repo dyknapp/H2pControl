@@ -1,7 +1,7 @@
 package main
 
 import (
-	"otter.manager/grpc"
+	"h2pcontrol.manager/grpc"
 )
 
 func main() {

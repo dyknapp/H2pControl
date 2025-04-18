@@ -1,4 +1,4 @@
-module otter.client
+module h2pcontrol.client
 
 go 1.23.7
 

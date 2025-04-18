@@ -18,7 +18,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/peer"
-	pb "otter.manager/pb"
+	pb "h2pcontrol.manager/pb"
 )
 
 var (
@@ -133,7 +133,7 @@ func createZip(sourceDir string) ([]byte, error) {
 }
 
 func compileProtoHandler(in *pb.StubRequest, proto_path string) (string, error) {
-	tmpDir, err := os.MkdirTemp("", "otter-")
+	tmpDir, err := os.MkdirTemp("", "h2pcontrol-")
 	if err != nil {
 		log.Fatal("Error creating temp dir:", err)
 	}
@@ -146,15 +146,7 @@ func compileProtoHandler(in *pb.StubRequest, proto_path string) (string, error) 
 	if in.Language == "python" {
 
 		for _, proto_file := range proto_files {
-			// args := fmt.Sprintf(
-			// 	"-m grpc_tools.protoc --python_betterproto2_out=%s -I. %s",
-			// 	tmpDir,
-			// 	filepath.Join(proto_path, proto_file.Name()),
-			// )
-
-			// cmd := exec.Command("python3", args)
-			// cmd.Env = os.Environ()
-			// // log.Println("ENV PATH:", os.Getenv("PATH"))
+			// Have to run this through bash to make sure it is in the same env, otherwise grpc_tools will not be available
 			fullCommand := fmt.Sprintf(
 				"source ~/.bashrc && python3 -m grpc_tools.protoc --python_betterproto2_out=%s -I%s %s",
 				tmpDir,

@@ -2,9 +2,9 @@
 // versions:
 // 	protoc-gen-go v1.36.6
 // 	protoc        v3.19.6
-// source: otter.proto
+// source: h2pcontrol.proto
 
-package otter_manager
+package h2pcontrol_manager
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -29,7 +29,7 @@ type ActivateServicesRequest struct {
 
 func (x *ActivateServicesRequest) Reset() {
 	*x = ActivateServicesRequest{}
-	mi := &file_otter_proto_msgTypes[0]
+	mi := &file_h2pcontrol_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -41,7 +41,7 @@ func (x *ActivateServicesRequest) String() string {
 func (*ActivateServicesRequest) ProtoMessage() {}
 
 func (x *ActivateServicesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_otter_proto_msgTypes[0]
+	mi := &file_h2pcontrol_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -54,7 +54,7 @@ func (x *ActivateServicesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActivateServicesRequest.ProtoReflect.Descriptor instead.
 func (*ActivateServicesRequest) Descriptor() ([]byte, []int) {
-	return file_otter_proto_rawDescGZIP(), []int{0}
+	return file_h2pcontrol_proto_rawDescGZIP(), []int{0}
 }
 
 type ActiveServicesResponse struct {
@@ -66,7 +66,7 @@ type ActiveServicesResponse struct {
 
 func (x *ActiveServicesResponse) Reset() {
 	*x = ActiveServicesResponse{}
-	mi := &file_otter_proto_msgTypes[1]
+	mi := &file_h2pcontrol_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -78,7 +78,7 @@ func (x *ActiveServicesResponse) String() string {
 func (*ActiveServicesResponse) ProtoMessage() {}
 
 func (x *ActiveServicesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_otter_proto_msgTypes[1]
+	mi := &file_h2pcontrol_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -91,7 +91,7 @@ func (x *ActiveServicesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActiveServicesResponse.ProtoReflect.Descriptor instead.
 func (*ActiveServicesResponse) Descriptor() ([]byte, []int) {
-	return file_otter_proto_rawDescGZIP(), []int{1}
+	return file_h2pcontrol_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *ActiveServicesResponse) GetServices() []*ServiceDefinition {
@@ -109,7 +109,7 @@ type HeartbeatPing struct {
 
 func (x *HeartbeatPing) Reset() {
 	*x = HeartbeatPing{}
-	mi := &file_otter_proto_msgTypes[2]
+	mi := &file_h2pcontrol_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -121,7 +121,7 @@ func (x *HeartbeatPing) String() string {
 func (*HeartbeatPing) ProtoMessage() {}
 
 func (x *HeartbeatPing) ProtoReflect() protoreflect.Message {
-	mi := &file_otter_proto_msgTypes[2]
+	mi := &file_h2pcontrol_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -134,7 +134,7 @@ func (x *HeartbeatPing) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HeartbeatPing.ProtoReflect.Descriptor instead.
 func (*HeartbeatPing) Descriptor() ([]byte, []int) {
-	return file_otter_proto_rawDescGZIP(), []int{2}
+	return file_h2pcontrol_proto_rawDescGZIP(), []int{2}
 }
 
 type HeartbeatPong struct {
@@ -146,7 +146,7 @@ type HeartbeatPong struct {
 
 func (x *HeartbeatPong) Reset() {
 	*x = HeartbeatPong{}
-	mi := &file_otter_proto_msgTypes[3]
+	mi := &file_h2pcontrol_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -158,7 +158,7 @@ func (x *HeartbeatPong) String() string {
 func (*HeartbeatPong) ProtoMessage() {}
 
 func (x *HeartbeatPong) ProtoReflect() protoreflect.Message {
-	mi := &file_otter_proto_msgTypes[3]
+	mi := &file_h2pcontrol_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -171,7 +171,7 @@ func (x *HeartbeatPong) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HeartbeatPong.ProtoReflect.Descriptor instead.
 func (*HeartbeatPong) Descriptor() ([]byte, []int) {
-	return file_otter_proto_rawDescGZIP(), []int{3}
+	return file_h2pcontrol_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *HeartbeatPong) GetHealthy() bool {
@@ -192,7 +192,7 @@ type ServiceDefinition struct {
 
 func (x *ServiceDefinition) Reset() {
 	*x = ServiceDefinition{}
-	mi := &file_otter_proto_msgTypes[4]
+	mi := &file_h2pcontrol_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -204,7 +204,7 @@ func (x *ServiceDefinition) String() string {
 func (*ServiceDefinition) ProtoMessage() {}
 
 func (x *ServiceDefinition) ProtoReflect() protoreflect.Message {
-	mi := &file_otter_proto_msgTypes[4]
+	mi := &file_h2pcontrol_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -217,7 +217,7 @@ func (x *ServiceDefinition) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ServiceDefinition.ProtoReflect.Descriptor instead.
 func (*ServiceDefinition) Descriptor() ([]byte, []int) {
-	return file_otter_proto_rawDescGZIP(), []int{4}
+	return file_h2pcontrol_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ServiceDefinition) GetServiceName() string {
@@ -250,7 +250,7 @@ type RegisterRequest struct {
 
 func (x *RegisterRequest) Reset() {
 	*x = RegisterRequest{}
-	mi := &file_otter_proto_msgTypes[5]
+	mi := &file_h2pcontrol_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -262,7 +262,7 @@ func (x *RegisterRequest) String() string {
 func (*RegisterRequest) ProtoMessage() {}
 
 func (x *RegisterRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_otter_proto_msgTypes[5]
+	mi := &file_h2pcontrol_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -275,7 +275,7 @@ func (x *RegisterRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterRequest.ProtoReflect.Descriptor instead.
 func (*RegisterRequest) Descriptor() ([]byte, []int) {
-	return file_otter_proto_rawDescGZIP(), []int{5}
+	return file_h2pcontrol_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *RegisterRequest) GetService() *ServiceDefinition {
@@ -294,7 +294,7 @@ type RegisterResponse struct {
 
 func (x *RegisterResponse) Reset() {
 	*x = RegisterResponse{}
-	mi := &file_otter_proto_msgTypes[6]
+	mi := &file_h2pcontrol_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -306,7 +306,7 @@ func (x *RegisterResponse) String() string {
 func (*RegisterResponse) ProtoMessage() {}
 
 func (x *RegisterResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_otter_proto_msgTypes[6]
+	mi := &file_h2pcontrol_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -319,7 +319,7 @@ func (x *RegisterResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterResponse.ProtoReflect.Descriptor instead.
 func (*RegisterResponse) Descriptor() ([]byte, []int) {
-	return file_otter_proto_rawDescGZIP(), []int{6}
+	return file_h2pcontrol_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *RegisterResponse) GetResult() string {
@@ -340,7 +340,7 @@ type StubRequest struct {
 
 func (x *StubRequest) Reset() {
 	*x = StubRequest{}
-	mi := &file_otter_proto_msgTypes[7]
+	mi := &file_h2pcontrol_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -352,7 +352,7 @@ func (x *StubRequest) String() string {
 func (*StubRequest) ProtoMessage() {}
 
 func (x *StubRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_otter_proto_msgTypes[7]
+	mi := &file_h2pcontrol_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -365,7 +365,7 @@ func (x *StubRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StubRequest.ProtoReflect.Descriptor instead.
 func (*StubRequest) Descriptor() ([]byte, []int) {
-	return file_otter_proto_rawDescGZIP(), []int{7}
+	return file_h2pcontrol_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *StubRequest) GetServiceName() string {
@@ -400,7 +400,7 @@ type StubResponse struct {
 
 func (x *StubResponse) Reset() {
 	*x = StubResponse{}
-	mi := &file_otter_proto_msgTypes[8]
+	mi := &file_h2pcontrol_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -412,7 +412,7 @@ func (x *StubResponse) String() string {
 func (*StubResponse) ProtoMessage() {}
 
 func (x *StubResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_otter_proto_msgTypes[8]
+	mi := &file_h2pcontrol_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -425,7 +425,7 @@ func (x *StubResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StubResponse.ProtoReflect.Descriptor instead.
 func (*StubResponse) Descriptor() ([]byte, []int) {
-	return file_otter_proto_rawDescGZIP(), []int{8}
+	return file_h2pcontrol_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *StubResponse) GetName() string {
@@ -459,7 +459,7 @@ type File struct {
 
 func (x *File) Reset() {
 	*x = File{}
-	mi := &file_otter_proto_msgTypes[9]
+	mi := &file_h2pcontrol_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -471,7 +471,7 @@ func (x *File) String() string {
 func (*File) ProtoMessage() {}
 
 func (x *File) ProtoReflect() protoreflect.Message {
-	mi := &file_otter_proto_msgTypes[9]
+	mi := &file_h2pcontrol_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -484,7 +484,7 @@ func (x *File) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use File.ProtoReflect.Descriptor instead.
 func (*File) Descriptor() ([]byte, []int) {
-	return file_otter_proto_rawDescGZIP(), []int{9}
+	return file_h2pcontrol_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *File) GetName() string {
@@ -501,24 +501,24 @@ func (x *File) GetContent() []byte {
 	return nil
 }
 
-var File_otter_proto protoreflect.FileDescriptor
+var File_h2pcontrol_proto protoreflect.FileDescriptor
 
-const file_otter_proto_rawDesc = "" +
+const file_h2pcontrol_proto_rawDesc = "" +
 	"\n" +
-	"\votter.proto\x12\x05otter\"\x19\n" +
+	"\vh2pcontrol.proto\x12\x05h2pcontrol\"\x19\n" +
 	"\x17ActivateServicesRequest\"N\n" +
 	"\x16ActiveServicesResponse\x124\n" +
-	"\bservices\x18\x01 \x03(\v2\x18.otter.ServiceDefinitionR\bservices\"\x0f\n" +
+	"\bservices\x18\x01 \x03(\v2\x18.h2pcontrol.ServiceDefinitionR\bservices\"\x0f\n" +
 	"\rHeartbeatPing\")\n" +
 	"\rHeartbeatPong\x12\x18\n" +
 	"\ahealthy\x18\x01 \x01(\bR\ahealthy\"~\n" +
 	"\x11ServiceDefinition\x12!\n" +
 	"\fservice_name\x18\x01 \x01(\tR\vserviceName\x12\x18\n" +
 	"\aversion\x18\x02 \x01(\tR\aversion\x12,\n" +
-	"\vproto_files\x18\x03 \x03(\v2\v.otter.FileR\n" +
+	"\vproto_files\x18\x03 \x03(\v2\v.h2pcontrol.FileR\n" +
 	"protoFiles\"E\n" +
 	"\x0fRegisterRequest\x122\n" +
-	"\aservice\x18\x01 \x01(\v2\x18.otter.ServiceDefinitionR\aservice\"*\n" +
+	"\aservice\x18\x01 \x01(\v2\x18.h2pcontrol.ServiceDefinitionR\aservice\"*\n" +
 	"\x10RegisterResponse\x12\x16\n" +
 	"\x06result\x18\x01 \x01(\tR\x06result\"f\n" +
 	"\vStubRequest\x12!\n" +
@@ -533,49 +533,49 @@ const file_otter_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
 	"\acontent\x18\x02 \x01(\fR\acontent2\x8d\x02\n" +
 	"\aManager\x122\n" +
-	"\aGetStub\x12\x12.otter.StubRequest\x1a\x13.otter.StubResponse\x12A\n" +
-	"\x0eRegisterServer\x12\x16.otter.RegisterRequest\x1a\x17.otter.RegisterResponse\x127\n" +
-	"\tHeartbeat\x12\x14.otter.HeartbeatPing\x1a\x14.otter.HeartbeatPong\x12R\n" +
-	"\x11GetActiveServices\x12\x1e.otter.ActivateServicesRequest\x1a\x1d.otter.ActiveServicesResponseB)\n" +
-	"\x0fio.otter.clientB\x05OtterP\x01Z\rotter.managerb\x06proto3"
+	"\aGetStub\x12\x12.h2pcontrol.StubRequest\x1a\x13.h2pcontrol.StubResponse\x12A\n" +
+	"\x0eRegisterServer\x12\x16.h2pcontrol.RegisterRequest\x1a\x17.h2pcontrol.RegisterResponse\x127\n" +
+	"\tHeartbeat\x12\x14.h2pcontrol.HeartbeatPing\x1a\x14.h2pcontrol.HeartbeatPong\x12R\n" +
+	"\x11GetActiveServices\x12\x1e.h2pcontrol.ActivateServicesRequest\x1a\x1d.h2pcontrol.ActiveServicesResponseB)\n" +
+	"\x0fio.h2pcontrol.clientB\x05h2pcontrolP\x01Z\rh2pcontrol.managerb\x06proto3"
 
 var (
-	file_otter_proto_rawDescOnce sync.Once
-	file_otter_proto_rawDescData []byte
+	file_h2pcontrol_proto_rawDescOnce sync.Once
+	file_h2pcontrol_proto_rawDescData []byte
 )
 
-func file_otter_proto_rawDescGZIP() []byte {
-	file_otter_proto_rawDescOnce.Do(func() {
-		file_otter_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_otter_proto_rawDesc), len(file_otter_proto_rawDesc)))
+func file_h2pcontrol_proto_rawDescGZIP() []byte {
+	file_h2pcontrol_proto_rawDescOnce.Do(func() {
+		file_h2pcontrol_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_h2pcontrol_proto_rawDesc), len(file_h2pcontrol_proto_rawDesc)))
 	})
-	return file_otter_proto_rawDescData
+	return file_h2pcontrol_proto_rawDescData
 }
 
-var file_otter_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
-var file_otter_proto_goTypes = []any{
-	(*ActivateServicesRequest)(nil), // 0: otter.ActivateServicesRequest
-	(*ActiveServicesResponse)(nil),  // 1: otter.ActiveServicesResponse
-	(*HeartbeatPing)(nil),           // 2: otter.HeartbeatPing
-	(*HeartbeatPong)(nil),           // 3: otter.HeartbeatPong
-	(*ServiceDefinition)(nil),       // 4: otter.ServiceDefinition
-	(*RegisterRequest)(nil),         // 5: otter.RegisterRequest
-	(*RegisterResponse)(nil),        // 6: otter.RegisterResponse
-	(*StubRequest)(nil),             // 7: otter.StubRequest
-	(*StubResponse)(nil),            // 8: otter.StubResponse
-	(*File)(nil),                    // 9: otter.File
+var file_h2pcontrol_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_h2pcontrol_proto_goTypes = []any{
+	(*ActivateServicesRequest)(nil), // 0: h2pcontrol.ActivateServicesRequest
+	(*ActiveServicesResponse)(nil),  // 1: h2pcontrol.ActiveServicesResponse
+	(*HeartbeatPing)(nil),           // 2: h2pcontrol.HeartbeatPing
+	(*HeartbeatPong)(nil),           // 3: h2pcontrol.HeartbeatPong
+	(*ServiceDefinition)(nil),       // 4: h2pcontrol.ServiceDefinition
+	(*RegisterRequest)(nil),         // 5: h2pcontrol.RegisterRequest
+	(*RegisterResponse)(nil),        // 6: h2pcontrol.RegisterResponse
+	(*StubRequest)(nil),             // 7: h2pcontrol.StubRequest
+	(*StubResponse)(nil),            // 8: h2pcontrol.StubResponse
+	(*File)(nil),                    // 9: h2pcontrol.File
 }
-var file_otter_proto_depIdxs = []int32{
-	4, // 0: otter.ActiveServicesResponse.services:type_name -> otter.ServiceDefinition
-	9, // 1: otter.ServiceDefinition.proto_files:type_name -> otter.File
-	4, // 2: otter.RegisterRequest.service:type_name -> otter.ServiceDefinition
-	7, // 3: otter.Manager.GetStub:input_type -> otter.StubRequest
-	5, // 4: otter.Manager.RegisterServer:input_type -> otter.RegisterRequest
-	2, // 5: otter.Manager.Heartbeat:input_type -> otter.HeartbeatPing
-	0, // 6: otter.Manager.GetActiveServices:input_type -> otter.ActivateServicesRequest
-	8, // 7: otter.Manager.GetStub:output_type -> otter.StubResponse
-	6, // 8: otter.Manager.RegisterServer:output_type -> otter.RegisterResponse
-	3, // 9: otter.Manager.Heartbeat:output_type -> otter.HeartbeatPong
-	1, // 10: otter.Manager.GetActiveServices:output_type -> otter.ActiveServicesResponse
+var file_h2pcontrol_proto_depIdxs = []int32{
+	4, // 0: h2pcontrol.ActiveServicesResponse.services:type_name -> h2pcontrol.ServiceDefinition
+	9, // 1: h2pcontrol.ServiceDefinition.proto_files:type_name -> h2pcontrol.File
+	4, // 2: h2pcontrol.RegisterRequest.service:type_name -> h2pcontrol.ServiceDefinition
+	7, // 3: h2pcontrol.Manager.GetStub:input_type -> h2pcontrol.StubRequest
+	5, // 4: h2pcontrol.Manager.RegisterServer:input_type -> h2pcontrol.RegisterRequest
+	2, // 5: h2pcontrol.Manager.Heartbeat:input_type -> h2pcontrol.HeartbeatPing
+	0, // 6: h2pcontrol.Manager.GetActiveServices:input_type -> h2pcontrol.ActivateServicesRequest
+	8, // 7: h2pcontrol.Manager.GetStub:output_type -> h2pcontrol.StubResponse
+	6, // 8: h2pcontrol.Manager.RegisterServer:output_type -> h2pcontrol.RegisterResponse
+	3, // 9: h2pcontrol.Manager.Heartbeat:output_type -> h2pcontrol.HeartbeatPong
+	1, // 10: h2pcontrol.Manager.GetActiveServices:output_type -> h2pcontrol.ActiveServicesResponse
 	7, // [7:11] is the sub-list for method output_type
 	3, // [3:7] is the sub-list for method input_type
 	3, // [3:3] is the sub-list for extension type_name
@@ -583,26 +583,26 @@ var file_otter_proto_depIdxs = []int32{
 	0, // [0:3] is the sub-list for field type_name
 }
 
-func init() { file_otter_proto_init() }
-func file_otter_proto_init() {
-	if File_otter_proto != nil {
+func init() { file_h2pcontrol_proto_init() }
+func file_h2pcontrol_proto_init() {
+	if File_h2pcontrol_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_otter_proto_rawDesc), len(file_otter_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_h2pcontrol_proto_rawDesc), len(file_h2pcontrol_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_otter_proto_goTypes,
-		DependencyIndexes: file_otter_proto_depIdxs,
-		MessageInfos:      file_otter_proto_msgTypes,
+		GoTypes:           file_h2pcontrol_proto_goTypes,
+		DependencyIndexes: file_h2pcontrol_proto_depIdxs,
+		MessageInfos:      file_h2pcontrol_proto_msgTypes,
 	}.Build()
-	File_otter_proto = out.File
-	file_otter_proto_goTypes = nil
-	file_otter_proto_depIdxs = nil
+	File_h2pcontrol_proto = out.File
+	file_h2pcontrol_proto_goTypes = nil
+	file_h2pcontrol_proto_depIdxs = nil
 }

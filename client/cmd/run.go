@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	pb "otter.client/pb"
+	pb "h2pcontrol.client/pb"
 )
 
 var run = &cobra.Command{
@@ -16,7 +16,7 @@ var run = &cobra.Command{
 		ctx := cmd.Context()
 		client := ctx.Value("client").(pb.ManagerClient)
 
-		v, err := LoadConfig("otter.server.toml")
+		v, err := LoadConfig("h2pcontrol.server.toml")
 		if err != nil {
 			panic(fmt.Errorf("could not load config file: %v", err))
 		}

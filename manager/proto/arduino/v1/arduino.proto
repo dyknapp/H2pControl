@@ -25,4 +25,3 @@ message HelloReply {
   string message = 1;
 }
 
-

@@ -9,11 +9,11 @@ import (
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	pb "otter.client/pb"
+	pb "h2pcontrol.client/pb"
 )
 
 var rootCmd = &cobra.Command{
-	Use: "otter",
+	Use: "h2pcontrol",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		// Initialize gRPC connection
 		conn, err := grpc.NewClient(*addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -32,8 +32,8 @@ var rootCmd = &cobra.Command{
 			conn.Close()
 		}
 	},
-	Short: "otter is a tool for managing grpc communication between different services",
-	Long:  "otter is a tool for managing grpc communication between different services. This is the otter client which allows you to register your service and consume other services. ",
+	Short: "h2pcontrol is a tool for managing grpc communication between different services",
+	Long:  "h2pcontrol is a tool for managing grpc communication between different services. This is the h2pcontrol client which allows you to register your service and consume other services. ",
 	Run: func(cmd *cobra.Command, args []string) {
 
 	},

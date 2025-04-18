@@ -1,6 +1,6 @@
 package main
 
-import "otter.client/cmd"
+import "h2pcontrol.client/cmd"
 
 func main() {
 	cmd.Execute()

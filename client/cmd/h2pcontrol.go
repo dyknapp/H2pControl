@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
-	pb "otter.client/pb"
+	pb "h2pcontrol.client/pb"
 )
 
 var (
@@ -108,7 +108,7 @@ func RegisterService(c pb.ManagerClient, ctx context.Context, service pb.Service
 	r, err := c.RegisterServer(ctx, &request)
 	if err != nil {
 		// Make this error handling nicer
-		log.Fatalf("Unable to connect to Otter Manager, is it running? %v", err)
+		log.Fatalf("Unable to connect to h2pcontrol Manager, is it running? %v", err)
 	}
 	log.Println(r.Result)
 

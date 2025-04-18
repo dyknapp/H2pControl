@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/spf13/viper"
-	pb "otter.client/pb"
+	pb "h2pcontrol.client/pb"
 )
 
 func LoadConfig(configName string) (*viper.Viper, error) {

@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v3.19.6
-// source: otter.proto
+// source: h2pcontrol.proto
 
-package otter_manager
+package h2pcontrol_manager
 
 import (
 	context "context"
@@ -19,7 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Manager_GetStub_FullMethodName = "/otter.Manager/GetStub"
+	Manager_GetStub_FullMethodName = "/h2pcontrol.Manager/GetStub"
 )
 
 // ManagerClient is the client API for Manager service.
@@ -108,7 +108,7 @@ func _Manager_GetStub_Handler(srv interface{}, ctx context.Context, dec func(int
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Manager_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "otter.Manager",
+	ServiceName: "h2pcontrol.Manager",
 	HandlerType: (*ManagerServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -117,5 +117,5 @@ var Manager_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "otter.proto",
+	Metadata: "h2pcontrol.proto",
 }
