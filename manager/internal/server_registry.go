@@ -21,7 +21,7 @@ type ServerEntry struct {
 
 type ServerRegistry struct {
 	mu      sync.RWMutex
-	servers map[string]*ServerEntry // or your own struct
+	servers map[string]*ServerEntry
 }
 
 func NewServerRegistry() *ServerRegistry {
@@ -36,6 +36,8 @@ func (r *ServerRegistry) RegisterServer(ctx context.Context, in *pb.RegisterRequ
 		Metadata:  in.Server,
 		Heartbeat: make(chan struct{}),
 	}
+
+	log.Printf("Server wants to connect")
 
 	r.mu.Lock()
 	r.servers[addr] = entry

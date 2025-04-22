@@ -1,0 +1,10 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "_name_"
+version = "1.0"
+description = "Project initialized by h2pcontrol cli"
+authors = [{ name = "Your Name", email = "you@example.com" }]
+requires-python = ">=3.7"

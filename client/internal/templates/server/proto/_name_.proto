@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+package __name__;
+
+// Implement your grpc proto file here.
+// Introduction to gRPC: https://grpc.io/docs/what-is-grpc/introduction/

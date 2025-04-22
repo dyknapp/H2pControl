@@ -12,12 +12,19 @@ async def main():
     # Should have a h2pcontroller.servers and then u can do h2pcontroller.servers.arduino?
     
     channel, service = await h2pcontroller.register_server("arduino", GreeterStub)
-    print(await service.say_hello(message=HelloRequest()))
     
-    response = await service.say_hello_again(HelloRequest())
-    print(response.message)
+    print(await service.say_hello(HelloRequest()))
+    # print(await service.say_hello(message=HelloRequest()))
+    
+    # print("kek")
+    for i in range(1, 1000):
+        response = await service.say_hello_again(HelloRequest())
+        # print(response.message)
 
+    # print("lmmao")
     await h2pcontroller.close()
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+

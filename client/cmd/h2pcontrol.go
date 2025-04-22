@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	addr = flag.String("addr", "localhost:50051", "the address to connect to")
+	addr = flag.String("addr", "127.0.0.1:50051", "the address to connect to")
 )
 
 func Run(c pb.ManagerClient, ctx context.Context, runCommand string, server *pb.ServerDefinition, proto_path string) {
@@ -39,7 +39,7 @@ func Run(c pb.ManagerClient, ctx context.Context, runCommand string, server *pb.
 
 	go runHeartbeat(c)
 
-	waitForShutdown()
+	waitForShutdown(cmd)
 	cancel()
 }
 
@@ -78,7 +78,7 @@ func streamOutput(reader io.Reader, prefix string) {
 	}
 }
 
-func waitForShutdown() {
+func waitForShutdown(cmd *exec.Cmd) {
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
 
@@ -86,6 +86,9 @@ func waitForShutdown() {
 
 	sig := <-signalChan
 	log.Printf("Received signal: %s. Shutting down...\n", sig)
+
+	cmd.Process.Signal(os.Interrupt)
+
 }
 
 func RegisterService(c pb.ManagerClient, ctx context.Context, server *pb.ServerDefinition, proto_dir_path string) {
@@ -105,11 +108,13 @@ func RegisterService(c pb.ManagerClient, ctx context.Context, server *pb.ServerD
 
 	request := pb.RegisterRequest{Server: server}
 
+	log.Println("Going to register to server")
+	rpcStart := time.Now()
 	r, err := c.RegisterServer(ctx, &request)
 	if err != nil {
-		// Make this error handling nicer
 		log.Fatalf("Unable to connect to h2pcontrol Manager, is it running? %v", err)
 	}
+	log.Printf("RegisterServer call took %v\n", time.Since(rpcStart))
 	log.Println(r.Result)
 
 }
