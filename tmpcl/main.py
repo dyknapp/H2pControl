@@ -24,7 +24,7 @@ async def main():
     # Prepare several say_hello requests
     requests = [service.say_hello(HelloRequest(name=f"User {i}")) for i in range(3)]
     
-    # Await all at once. Be careful with this, when you do not gather your process will hang!
+    # Await all at once
     responses = await asyncio.gather(*requests)
     
     for response in responses:

@@ -1,42 +1,65 @@
 import asyncio
+import logging
+import signal
+from stubs.arduino.python.v1.arduino import GreeterBase, HelloReply, HelloRequest
+from grpclib.server import Server
+import tomllib
 
-# h2pcontrol python library to connect to manager and handle other server dependencies
-from h2pcontrol_connector import H2PControl
 
-# The library you want to use, here we use a helloworld example
-from hpcontrol_python_server.arduino import GreeterStub, HelloRequest
+# Could consider this boilerplate to be done by our h2p library
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[logging.StreamHandler()]
+)
+logger = logging.getLogger(__name__)
 
+
+# --- Read configuration from TOML ---
+# We could consider putting this tomllib as a subdependency of our h2p library to make this all simpler
+with open("h2pcontrol.server.toml", "rb") as f:
+    config = tomllib.load(f)
+configuration = config.get("configuration", {})
+# Now you can use configuration["port"]
+
+class GreetingService(GreeterBase):
+    async def say_hello(self, message: HelloRequest) -> HelloReply:
+        logger.info(f"Received request: {message}")
+        response = HelloReply(message="World")
+        logger.info(f"Sending response: {response}")
+        return response
+
+    async def say_hello_again(self, message: HelloRequest) -> HelloReply:
+        logger.info(f"Received request: {message}")
+        response = HelloReply(message="World again!")
+        logger.info(f"Sending response: {response}")
+        return response
+
+
+# There is a lot of syntactic sugar here, could resolve this?
 async def main():
-    # First connect to the H2P manager
-    h2pcontroller = H2PControl("localhost:50051")
-    await h2pcontroller.connect()
-    
-    
-    # Register any channel/service combination with full type safety by passing its stub
-    # Find a list of servers with `h2pcontrol fetch`. To get more specific information of a service, use
-    # `h2pcontrol fetch <name>`
-    channel, service = await h2pcontroller.register_server("arduino", GreeterStub)
-    
-    # GRPC async calls, so use await if you need the response.
-    print(await service.say_hello(HelloRequest()))
+    server = Server([GreetingService()])
+    port = configuration.get("port", 50052)
+    await server.start("127.0.0.1", port)
+    logger.info(f"Server started on 127.0.0.1:{port}")
 
-    # To run requests parallel, you can just simply 'gather' requests and await at once:
-    # Prepare several say_hello requests
-    requests = [service.say_hello(HelloRequest(name=f"User {i}")) for i in range(3)]
-    
-    # Await all at once
-    responses = await asyncio.gather(*requests)
-    
-    for response in responses:
-        print(response)
-        
-    # In the case you just want to fire-and-forget a function call, we can create an asyncio task:
-    asyncio.create_task(service.say_hello(HelloRequest(name="Background task")))
-  
-    await h2pcontroller.close()
+    # Use an asyncio Event to wait for shutdown signal
+    should_stop = asyncio.Event()
 
+    def _signal_handler():
+        logger.info("Shutdown signal received.")
+        should_stop.set()
 
-if __name__ == "__main__":
+    loop = asyncio.get_running_loop()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        loop.add_signal_handler(sig, _signal_handler)
+
+    await should_stop.wait()
+    logger.info("Shutting down server...")
+    await server.close()
+    await server.wait_closed()
+    logger.info("Server shutdown complete.")
+
+if __name__ == '__main__':
     asyncio.run(main())
-
-

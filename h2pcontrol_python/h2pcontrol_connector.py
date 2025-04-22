@@ -1,34 +1,50 @@
 import grpc
-from pb.h2pcontrol import Empty, ManagerStub, FetchServersResponse
-from typing import Type, Tuple, TypeVar
+from pb.h2pcontrol import Empty, ManagerStub, FetchServersResponse, FetchServerDefinition
+from typing import Dict, Type, Tuple, TypeVar
+from functools import reduce
 
 TStub = TypeVar("TStub")
 
+class ServerAccessor:
+    def __init__(self, server_names):
+        super().__init__()
+        for name in server_names:
+            # Only allow valid Python identifiers as attributes
+            if name.isidentifier():
+                setattr(self, name, name)
+    
 class H2PControl:
     def __init__(self, address: str):
         self.address = address
         self.channel = None
-        self.service = None
+        self.manager = None
+        self.servers = []
 
     async def connect(self):
         self.channel = grpc.aio.insecure_channel(self.address)
-        self.service = ManagerStub(self.channel)
-       
+        self.manager = ManagerStub(self.channel)
+        
+        fetchServerResponse : FetchServersResponse = await self.manager.fetch_servers(Empty())
+        
+        server_names = [server.name for server in fetchServerResponse.servers]
+        self.servers = ServerAccessor(server_names)
+        
 
     async def register_server(
             self, name: str, stub: Type[TStub]
         ) -> Tuple[grpc.aio.Channel, TStub]:
-            response: FetchServersResponse = await self.service.fetch_servers(Empty())
+            response: FetchServersResponse = await self.manager.fetch_servers(Empty())
             for server in response.servers:
                 if server.name == name:
                     channel = grpc.aio.insecure_channel(server.addr)
-                    service = stub(channel)
-                    return channel, service
+                    server = stub(channel)
+                    return channel, server
             raise ValueError(f"Server named {name} not found")
-      
+        
+        
     async def close(self):
         if self.channel:
             await self.channel.close()
             self.channel = None
-            self.service = None
+            self.manager = None
 
