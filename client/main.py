@@ -25,15 +25,15 @@ configuration = config.get("configuration", {})
 
 class GreetingService(GreeterBase):
     async def say_hello(self, message: HelloRequest) -> HelloReply:
-        logger.info(f"Received request: {message}")
+        # logger.info(f"Received request: {message}")
         response = HelloReply(message="World")
-        logger.info(f"Sending response: {response}")
+        # logger.info(f"Sending response: {response}")
         return response
 
     async def say_hello_again(self, message: HelloRequest) -> HelloReply:
-        logger.info(f"Received request: {message}")
+        # logger.info(f"Received request: {message}")
         response = HelloReply(message="World again!")
-        logger.info(f"Sending response: {response}")
+        # logger.info(f"Sending response: {response}")
         return response
 
 

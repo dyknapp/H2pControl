@@ -17,6 +17,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"google.golang.org/grpc"
 	pb "h2pcontrol.client/pb"
 )
@@ -28,26 +29,74 @@ var (
 func Run(c pb.ManagerClient, ctx context.Context, runCommand string, server *pb.ServerDefinition, proto_path string) {
 	RegisterService(c, ctx, server, proto_path)
 
+	args := strings.Fields(runCommand)
+	if len(args) < 2 {
+		fmt.Print("invalid command format %s: need 'shell command'", args)
+		return
+	}
+
+	// Watch for file changes:
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		panic(err)
+	}
+	defer watcher.Close()
+
 	cmdCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	cmd, err := startCommand(cmdCtx, runCommand)
-	if err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+	var cmd *exec.Cmd
+	restart := func() {
+		if cmd != nil && cmd.Process != nil {
+			_ = cmd.Process.Kill()
+			cmd.Wait()
+		}
+		c, err := startCommand(cmdCtx, args)
+		if err != nil {
+			fmt.Println("Failed to start command:", err)
+			return
+		}
+		cmd = c
 	}
-	defer cmd.Wait()
+
+	restart()
+
+	// TODO: Make this more general, but for now will do for python
+	err = watcher.Add(args[1])
+	if err != nil {
+		panic(err)
+	}
 
 	go runHeartbeat(c)
 
+	// Actual watcher events
+	go func() {
+		debounce := time.Now()
+		for {
+			select {
+			case event, ok := <-watcher.Events:
+				if !ok {
+					return
+				}
+				if event.Op&(fsnotify.Write|fsnotify.Create) != 0 && time.Since(debounce) > 300*time.Millisecond {
+					fmt.Println("File changed, restarting...")
+					restart()
+					debounce = time.Now()
+				}
+			case err, ok := <-watcher.Errors:
+				if !ok {
+					return
+				}
+				fmt.Println("Watcher error:", err)
+			}
+		}
+	}()
+
 	waitForShutdown(cmd)
-	cancel()
+
 }
 
-func startCommand(ctx context.Context, command string) (*exec.Cmd, error) {
-	args := strings.Fields(command)
-	if len(args) < 2 {
-		return nil, fmt.Errorf("invalid command format %s: need 'shell command'", args)
-	}
+func startCommand(ctx context.Context, args []string) (*exec.Cmd, error) {
 
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 

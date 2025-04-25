@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -60,7 +61,7 @@ func renameAndReplace(projectType, projectName string) error {
 		// Rename __name__ in h2pcontrol.server.toml, pyproject.toml and in proto.toml
 		replacePlaceholderValues("pyproject.toml", "_name_", projectName)
 		replacePlaceholderValues("h2pcontrol.server.toml", "_name_", projectName)
-		replacePlaceholderValues(filepath.Join("proto", projectName+".proto"), "_name_", projectName)
+		replacePlaceholderValues(filepath.Join("proto", projectName+".proto"), "__name__", projectName)
 	} else if projectType == "client" {
 
 		// replacePlaceholderValues("pyproject.toml", "_name_", projectName)
@@ -109,7 +110,7 @@ func promptProjectName() string {
 func copyEmbedDir(efs embed.FS, src, dst string) error {
 	entries, err := efs.ReadDir(src)
 	if err != nil {
-		fmt.Printf("Could not read source dir")
+		fmt.Printf("Could not read source dir\n")
 		return err
 	}
 	// https://chmodcommand.com/chmod-0755/
@@ -117,7 +118,9 @@ func copyEmbedDir(efs embed.FS, src, dst string) error {
 		return err
 	}
 	for _, entry := range entries {
-		srcPath := filepath.Join(src, entry.Name())
+		// srcPath has to be unix like (path)
+		srcPath := path.Join(src, entry.Name())
+		// dstPath has to be windows like (assuming its being written on windows...) TODO: make this different per OS
 		dstPath := filepath.Join(dst, entry.Name())
 		if entry.IsDir() {
 			if err := copyEmbedDir(efs, srcPath, dstPath); err != nil {
