@@ -37,16 +37,12 @@ var compile = &cobra.Command{
 		ep, err := python.NewEmbeddedPython("betterproto")
 		check(err)
 
-		// test
 		tmpDir := filepath.Join(os.TempDir(), "go-h2pcontrol")
-
-		// &internal.PythonLibs
 		// Get the python libraries
 		ef, err := embed_util.NewEmbeddedFilesWithTmpDir(data.Data, tmpDir+"-h2pcontrol-lib", true)
 		check(err)
 
 		extractedPath := ef.GetExtractedPath()
-
 		ep.AddPythonPath(extractedPath)
 
 		protocPath, err := internal.ExtractProtoc()
@@ -54,13 +50,6 @@ var compile = &cobra.Command{
 			fmt.Fprintf(os.Stderr, "Failed to extract protoc: %v\n", err)
 			os.Exit(1)
 		}
-
-		testCmd, err := ep.PythonCmd("-m", "pip", "list")
-		check(err)
-
-		testCmd.Stdout = os.Stdout
-		testCmd.Stderr = os.Stderr
-		testCmd.Run()
 
 		outDir := filepath.Join("test", "tmp")
 		os.MkdirAll(outDir, 0755)
@@ -82,35 +71,42 @@ var compile = &cobra.Command{
 		// Install the dist locally
 		fmt.Printf("%s[4/4] Installing package locally...\n%s", colorPurple, colorNone)
 
-		// Find package:
-		distDir := filepath.Join(outDir, "dist")
-		files, err := os.ReadDir(distDir)
-		if err != nil {
-			panic(err)
-		}
-
-		var distFile string
-		for _, f := range files {
-			if !f.IsDir() && (filepath.Ext(f.Name()) == ".gz" || filepath.Ext(f.Name()) == ".whl") {
-				distFile = filepath.Join(distDir, f.Name())
-				break
-			}
-		}
-		if distFile == "" {
-			panic("No .tar.gz or .whl file found in dist directory")
-		}
-
-		// Install package
-		pipCmd := exec.Command("python3", "-m", "pip", "install", distFile)
-		// pipCmd.Stdout = os.Stdout
-		pipCmd.Stderr = os.Stderr
-		if err := pipCmd.Run(); err != nil {
-			fmt.Fprintf(os.Stderr, "pip install failed: %v\n", err)
-			os.Exit(1)
-		}
+		distFile, err := findBuildPackage(outDir)
+		check(err)
+		installPackage(distFile)
 
 		fmt.Printf("%sPackage installed into your Python environment's site-packages.%s\n", colorPurple, colorNone)
 	},
+}
+
+func installPackage(distFile string) {
+	pipCmd := exec.Command("python3", "-m", "pip", "install", distFile)
+	// pipCmd.Stdout = os.Stdout
+	pipCmd.Stderr = os.Stderr
+	if err := pipCmd.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "pip install failed: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func findBuildPackage(outDir string) (string, error) {
+	distDir := filepath.Join(outDir, "dist")
+	files, err := os.ReadDir(distDir)
+	if err != nil {
+		panic(err)
+	}
+
+	var distFile string
+	for _, f := range files {
+		if !f.IsDir() && (filepath.Ext(f.Name()) == ".gz" || filepath.Ext(f.Name()) == ".whl") {
+			distFile = filepath.Join(distDir, f.Name())
+			break
+		}
+	}
+	if distFile == "" {
+		return "", fmt.Errorf("no .tar.gz or .whl file found in dist directory")
+	}
+	return distFile, nil
 }
 
 func copyPyrojectToml(outDir string) {
