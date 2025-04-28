@@ -1,0 +1,112 @@
+syntax = "proto3";
+
+package eval_ad45335_dac;
+
+// Implement your grpc proto file here.
+// Introduction to gRPC: https://grpc.io/docs/what-is-grpc/introduction/
+
+service DAC {
+  rpc SendVoltage (Voltage) returns (VoltageReply) {}
+  rpc SendChannelConfig (ChannelConfig) returns (ChannelConfigReply) {}
+  rpc SendCompleteConfig (Config) returns (ConfigReply) {}
+  rpc StoreConfig(StoreConfigRequest) returns (StoredConfig) {}
+  rpc GetConfig(GetStoredConfigRequest) returns (StoredConfig) {}
+}
+
+message StoreConfigRequest {
+  string name = 1;
+}
+
+message GetStoredConfigRequest {
+  string uuid = 1;
+}
+
+message Voltage {
+  double voltage = 1;
+}
+
+message VoltageReply {
+  double wattage = 1;
+}
+
+message ChannelConfig {
+  DeflectorChannels pre_stack_deflector_channels = 1;
+  Channel stack_einzel_channel = 2;
+  DeflectorChannels post_stack_deflector_channels = 3;
+  Channel horizontal_bender_einzel_channel = 4;
+  QuadrupoleBenderChannels quadrupole_bender_channels = 5;
+}
+
+message ChannelConfigReply {
+  bool success = 1;
+  string message = 2;
+}
+
+message ConfigReply {
+  bool success = 1;
+  string message = 2;
+}
+
+message DeflectorChannels {
+  Channel x_minus_channel = 1;
+  Channel x_plus_channel = 2;
+  Channel z_minus_channel = 3;
+  Channel z_plus_channel = 4;
+}
+
+message QuadrupoleBenderChannels {
+  Channel bend_ions_plus_channel = 1;
+  Channel bend_ions_minus_channel = 2;
+}
+
+message StoredConfig {
+  int64 timestamp = 1;  // Unix timestamp in milliseconds
+  string name = 2;
+  string uuid = 3;  
+  Config config = 4;
+}
+
+message Config {
+  StackDeflector pre_stack_deflector = 1;
+  StackEinzel stack_einzel = 2;
+  StackDeflector post_stack_deflector = 3;
+  HorizontalBenderEinzel horizontal_bender_einzel = 4;
+  QuadrupoleBender quadrupole_bender = 5;
+}
+
+message DeflectionSetting {
+  double x = 1;
+  double z = 2;
+}
+
+message StackDeflector {
+  DeflectionSetting deflection_setting = 1;
+  DeflectorChannels channels = 2;
+  double dead_zone = 3;
+  double sensitivity = 4;
+  bool locked = 5;
+}
+
+message StackEinzel {
+  int64 focus = 1;
+  Channel channel = 2;
+}
+
+message HorizontalBenderEinzel {
+  int64 focus = 1;
+  Channel channel = 2;
+}
+
+message QuadrupoleBender {
+  int64 bend = 1;
+  QuadrupoleBenderChannels channels = 2;
+}
+
+message Channel {
+  int32 port = 1;
+  ChannelType type = 2;
+}
+
+enum ChannelType {
+  AD45335 = 0;
+}

@@ -1,4 +1,4 @@
 .sum
 __pycache__
 stubs
-client/internal/assets
+client/internal/assets/python-libs/data

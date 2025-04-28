@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -17,6 +18,8 @@ var compile = &cobra.Command{
 	Long:  "Compile your proto files and put them in your site-packages",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		protoDir := filepath.Join(args[0])
+
 		ep, err := python.NewEmbeddedPython("betterproto")
 		if err != nil {
 			return
@@ -30,18 +33,24 @@ var compile = &cobra.Command{
 		ep.AddPythonPath(extractedPath)
 
 		// test:
-		protocPath := filepath.Join(ep.BinDir(), "protoc")
+		protocPath, err := internal.ExtractProtoc()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to extract protoc: %v\n", err)
+			os.Exit(1)
+		}
 
-		// Example: generate code
-		cmd := exec.Command(protocPath,
+		outDir := filepath.Join("test", "tmp")
+
+		protocCmd := exec.Command(protocPath,
 			"--python_betterproto2_out="+outDir,
 			"-I", protoDir,
 			filepath.Join(protoDir, "*.proto"),
 		)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
-			return err
+		protocCmd.Stdout = os.Stdout
+		protocCmd.Stderr = os.Stderr
+		if err := protocCmd.Run(); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to run protoc command: %v\n", err)
+			os.Exit(1)
 		}
 	},
 }
