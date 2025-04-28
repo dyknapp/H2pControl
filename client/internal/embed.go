@@ -2,7 +2,7 @@ package internal
 
 import "embed"
 
-//go:embed assets/python-libs/data/*
+//go:embed assets/python-libs/data/**
 var PythonLibs embed.FS
 
 //go:embed assets/protoc/**

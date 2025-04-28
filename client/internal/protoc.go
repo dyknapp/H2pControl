@@ -55,7 +55,7 @@ func ExtractProtoc() (string, error) {
 		return "", fmt.Errorf("unsupported OS: %s", runtime.GOOS)
 	}
 
-	assetPath := filepath.Join("internal/assets/protoc", dir, "bin", binName)
+	assetPath := filepath.Join("assets/protoc", dir, "bin", binName)
 	binData, err := ProtocBinaries.Open(assetPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to open embedded protoc: %w", err)
