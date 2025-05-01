@@ -51,12 +51,16 @@ var compile = &cobra.Command{
 			os.Exit(1)
 		}
 
+		// TEMP THIS SHUOLD GO TO ACTUAL TMP
 		outDir := filepath.Join("test", "tmp")
 		os.MkdirAll(outDir, 0755)
 
 		// Compile proto files
 		fmt.Printf("%s[1/4] Compiling proto files...\n%s", colorPurple, colorNone)
-		err = protoCompile(protocPath, protoDir, outDir)
+
+		// TEMP
+		os.MkdirAll(outDir+"/src", 0755)
+		err = protoCompile(protocPath, protoDir, outDir+"/src")
 		check(err)
 
 		// Move the pyproject.toml file, required to make a build
@@ -76,12 +80,19 @@ var compile = &cobra.Command{
 		installPackage(distFile)
 
 		fmt.Printf("%sPackage installed into your Python environment's site-packages.%s\n", colorPurple, colorNone)
+
+		// // Clean up
+		// err = os.RemoveAll(outDir)
+		// check(err)
+
+		// err = os.Remove(outDir)
+		// check(err)
 	},
 }
 
 func installPackage(distFile string) {
-	pipCmd := exec.Command("python3", "-m", "pip", "install", distFile)
-	// pipCmd.Stdout = os.Stdout
+	pipCmd := exec.Command("pip", "install", "--force-reinstall", distFile)
+	pipCmd.Stdout = os.Stdout
 	pipCmd.Stderr = os.Stderr
 	if err := pipCmd.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "pip install failed: %v\n", err)
@@ -111,6 +122,13 @@ func findBuildPackage(outDir string) (string, error) {
 
 func copyPyrojectToml(outDir string) {
 	srcFile, err := os.Open("pyproject.toml")
+	check(err)
+	content, err := io.ReadAll(srcFile)
+	check(err)
+	fmt.Printf("Contents of %s:\n%s\n", "pyproject.toml", string(content))
+
+	// Rewind the file pointer to the beginning for copying
+	_, err = srcFile.Seek(0, io.SeekStart)
 	check(err)
 	defer srcFile.Close()
 	destFile, err := os.Create(filepath.Join(outDir, "pyproject.toml"))
@@ -151,7 +169,7 @@ func buildPackage(ep *python.EmbeddedPython, outDir string) error {
 	if err != nil {
 		panic(err)
 	}
-	// buildCmd.Stdout = os.Stdout
+	buildCmd.Stdout = os.Stdout
 	buildCmd.Stderr = os.Stderr
 	if err := buildCmd.Run(); err != nil {
 		return fmt.Errorf("python build failed: %v", err)
