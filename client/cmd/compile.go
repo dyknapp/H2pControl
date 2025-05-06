@@ -229,7 +229,6 @@ func init() {
 	compile.Flags().StringVar(&protoDir, "proto-dir", "", "Directory containing proto files (required)")
 	compile.Flags().StringVar(&name, "name", "", "Name of the package (required)")
 
-	// Mark flags as required
 	compile.MarkFlagRequired("proto-dir")
 	compile.MarkFlagRequired("name")
 

@@ -22,16 +22,20 @@ const (
 var rootCmd = &cobra.Command{
 	Use: "h2pcontrol",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+
 		// Initialize gRPC connection
 		conn, err := grpc.NewClient(*addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			log.Fatalf("connection failed: %v", err)
 		}
+		fmt.Printf("Connection established: %v\n", conn != nil)
 
 		// Store connection and context in command
 		ctx := context.Background()
-		cmd.SetContext(context.WithValue(ctx, connKey, conn))
-		cmd.SetContext(context.WithValue(cmd.Context(), clientKey, pb.NewManagerClient(conn)))
+		ctx = context.WithValue(ctx, connKey, conn)
+		client := pb.NewManagerClient(conn)
+		ctx = context.WithValue(ctx, clientKey, client)
+		cmd.SetContext(ctx)
 	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
 		// Cleanup connection

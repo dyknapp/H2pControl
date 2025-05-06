@@ -2,3 +2,7 @@
 __pycache__
 stubs
 client/internal/assets/python-libs/data
+
+dist
+
+*.egg-info

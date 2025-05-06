@@ -1,5 +1,5 @@
 import grpc
-from pb.h2pcontrol import Empty, ManagerStub, FetchServersResponse, FetchServerDefinition
+from h2pcontrol.pb.h2pcontrol import Empty, ManagerStub, FetchServersResponse, FetchServerDefinition
 from typing import Dict, Type, Tuple, TypeVar
 from functools import reduce
 

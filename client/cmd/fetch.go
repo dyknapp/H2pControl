@@ -15,7 +15,7 @@ var fetch = &cobra.Command{
 	Args:  cobra.RangeArgs(0, 1),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
-		client := ctx.Value("client").(pb.ManagerClient)
+		client := ctx.Value(clientKey).(pb.ManagerClient)
 
 		if len(args) == 0 {
 			// No argument: fetch all servers
