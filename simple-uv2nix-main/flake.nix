@@ -41,6 +41,17 @@
         pythonparser = prev.pythonparser.overrideAttrs (old: {
           buildInputs = (old.buildInputs or [ ]) ++ [ final.setuptools ];
         });
+        pyqt6 = prev.pyqt6.overrideAttrs (old: {
+          buildInputs = (old.buildInputs or [ ]) ++ [
+            pkgs.qt6.full
+            pkgs.qt6.qtbase
+            pkgs.qt6.qtsvg
+            pkgs.qt6.qttools
+          ];
+          # nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [
+          #   pkgs.qt6.wrapQtApps
+          # ];
+        });
       };
 
       pkgs = nixpkgs.legacyPackages.${system};
@@ -66,13 +77,18 @@
           packages = [
             python
             pkgs.uv
+            pkgs.qt6.full
           ];
           env = {
             UV_PYTHON_DOWNLOADS = "never";
             UV_PYTHON = python.interpreter;
           } // lib.optionalAttrs pkgs.stdenv.isLinux {
-            LD_LIBRARY_PATH = lib.makeLibraryPath pkgs.pythonManylinuxPackages.manylinux1;
-          };
+            LD_LIBRARY_PATH = lib.makeLibraryPath (with pkgs; [
+              pythonManylinuxPackages.manylinux1
+              qt6.full
+              qt6.qtbase
+              qt6.qtsvg
+            ]);
           shellHook = ''
             unset PYTHONPATH
           '';
@@ -92,12 +108,15 @@
             packages = [
               virtualenv
               pkgs.uv
+              pkgs.qt6.full 
             ];
 
             env = {
               UV_NO_SYNC = "1";
               UV_PYTHON = "${virtualenv}/bin/python";
               UV_PYTHON_DOWNLOADS = "never";
+
+              QT_PLUGIN_PATH = "${pkgs.qt6.full}/lib/qt-6/plugins";
             };
 
             shellHook = ''
@@ -115,4 +134,5 @@
           };
       };
     };
+  };
 }
