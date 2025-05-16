@@ -50,6 +50,13 @@
           final: prev: {
             artiq = prev.artiq.overrideAttrs (old: {
               buildInputs = (old.buildInputs or [ ]) ++ [ final.setuptools ];
+              propagatedBuildInputs =
+                super.artiq.propagatedBuildInputs  ++
+                [
+                  qt5.qtsvg
+                ];
+
+                              
             });
             artiq-comtools = prev.artiq-comtools.overrideAttrs (old: {
               buildInputs = (old.buildInputs or [ ]) ++ [ final.setuptools ];
