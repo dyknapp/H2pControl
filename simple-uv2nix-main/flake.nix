@@ -156,6 +156,9 @@
               pkgs.uv
             ];
 
+
+    
+
             env = {
               UV_NO_SYNC = "1";
               UV_PYTHON = python.interpreter;
@@ -165,6 +168,11 @@
             shellHook = ''
               unset PYTHONPATH
               export REPO_ROOT=$(git rev-parse --show-toplevel)
+
+              # Set up library paths and Qt environment
+              export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath libraries}"
+              export QT_PLUGIN_PATH="${pkgs.qt5.qtbase.bin}/lib/qt-${pkgs.qt5.qtbase.version}/plugins"
+              export QT_QPA_PLATFORM=xcb
 
               echo "========================================="
               echo "Debug information:"
