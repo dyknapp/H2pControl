@@ -147,17 +147,37 @@
               root = "$REPO_ROOT";
             };
 
+            libraries = [
+                pkgs.libGL
+                pkgs.stdenv.cc.cc.lib
+                pkgs.glib
+                pkgs.zlib
+                "/run/opgengl-driver"
+                pkgs.libxkbcommon
+                pkgs.fontconfig
+                pkgs.xorg.libX11
+                pkgs.freetype
+                pkgs.dbus
+
+                pkgs.xorg.libxcb
+                pkgs.xorg.xcbutil
+                pkgs.xorg.xcbutilcursor
+                pkgs.xorg.xcbutilerrors
+                pkgs.xorg.xcbutilimage
+                pkgs.xorg.xcbutilkeysyms
+                pkgs.xorg.xcbutilrenderutil
+                pkgs.xorg.xcbutilwm
+
+                pkgs.zstd
+              ];
+
             editablePythonSet = pythonSet.overrideScope editableOverlay;
             virtualenv = editablePythonSet.mkVirtualEnv "artiq-dev-env" workspace.deps.all;
           in
           pkgs.mkShell {
-            packages = [
-              virtualenv
-              pkgs.uv
-            ];
-
-
-    
+            nativeBuildInputs = [ ];
+            buildInputs = libraries;
+            packages = [ virtualenv pkgs.uv ];
 
             env = {
               UV_NO_SYNC = "1";
