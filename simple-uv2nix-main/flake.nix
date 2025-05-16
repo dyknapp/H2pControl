@@ -40,46 +40,43 @@
       pkgs = nixpkgs.legacyPackages.${system};
       python = pkgs.python311;
 
-      pyprojectOverrides = final: prev: {
-        artiq = prev.artiq.overrideAttrs (old: {
-          buildInputs = (old.buildInputs or [ ]) ++ [ final.setuptools ];
-        });
-        artiq-comtools = prev.artiq-comtools.overrideAttrs (old: {
-          buildInputs = (old.buildInputs or [ ]) ++ [ final.setuptools ];
-        });
-        sipyco = prev.sipyco.overrideAttrs (old: {
-          buildInputs = (old.buildInputs or [ ]) ++ [ final.setuptools ];
-        });
-        pythonparser = prev.pythonparser.overrideAttrs (old: {
-          buildInputs = (old.buildInputs or [ ]) ++ [ final.setuptools ];
-        });
-      };
-#      pythonSet = (pkgs.callPackage pyproject-nix.build.packages {
-#        inherit python;
-#      }).overrideScope (
-#        lib.composeManyExtensions [
-#          pyproject-build-systems.overlays.default
-#          overlay
-#          pyprojectOverrides
-#        ]
-#      );
-#
-     pythonSet =
-        # Use base package set from pyproject.nix builders
-        (pkgs.callPackage pyproject-nix.build.packages {
-          inherit python;
-        }).overrideScope
-          (
-            lib.composeManyExtensions [
-              pyproject-build-systems.overlays.default
-              overlay
-              pyprojectOverrides
-              (import ./pyproject-overrides.nix pkgs)
-            ]
-          );
+      pyprojectOverrides =
+        pkgs.lib.composeExtensions (uv2nix_hammer_overrides.overrides pkgs) (
+          # use uv2nix_hammer_overrides.overrides_debug
+          #   to see which versions were matched to which overrides
+          #  use uv2nix_hammer_overrides.overrides_strict / overrides_strict_debug
+          #  to use only overrides exactly matching your python package versions
 
+          final: prev: {
+            artiq = prev.artiq.overrideAttrs (old: {
+              buildInputs = (old.buildInputs or [ ]) ++ [ final.setuptools ];
+            });
+            artiq-comtools = prev.artiq-comtools.overrideAttrs (old: {
+              buildInputs = (old.buildInputs or [ ]) ++ [ final.setuptools ];
+            });
+            sipyco = prev.sipyco.overrideAttrs (old: {
+              buildInputs = (old.buildInputs or [ ]) ++ [ final.setuptools ];
+            });
+            pythonparser = prev.pythonparser.overrideAttrs (old: {
+              buildInputs = (old.buildInputs or [ ]) ++ [ final.setuptools ];
+            });
+          }
+      );
 
-
+      pythonSet =
+       # Use base package set from pyproject.nix builders
+       (pkgs.callPackage pyproject-nix.build.packages {
+         inherit python;
+       }).overrideScope
+         (
+           lib.composeManyExtensions [
+             pyproject-build-systems.overlays.default
+             overlay
+             pyprojectOverrides
+          
+            #  (import ./pyproject-overrides.nix pkgs)
+           ]
+         );
     in
     {
       packages.${system}.default = pythonSet.mkVirtualEnv "artiq-env" workspace.deps.default;
