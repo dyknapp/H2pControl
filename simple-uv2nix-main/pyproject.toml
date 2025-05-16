@@ -4,31 +4,32 @@ version = "0.1.0"
 requires-python = ">=3.10,<3.12"
 dependencies = [
     "setuptools",
-    "artiq @ git+https://github.com/m-labs/artiq.git",
+    "artiq @ git+https://github.com/m-labs/artiq.git@8.0",
+    "artiq-comtools @ git+https://github.com/m-labs/artiq-comtools.git",
     "sipyco @ git+https://github.com/m-labs/sipyco.git",
- "pythonparser @ git+https://github.com/m-labs/pythonparser.git",
+    "pythonparser @ git+https://github.com/m-labs/pythonparser.git",
     "numpy>=1.20.0",
     "llvmlite>=0.44.0",
-    # PySide6 or PySide6-Essentials or PyQt6
-    "PyQt6 >= 6.0.0",
-    # "PyQt6 == 6.8.0", # compatible with nixpkgs.qt6.full v6.8.1
-    "PySide6-Essentials >= 6.0.0",
-    # "PySide6-Essentials == 6.8.1", # compatible with nixpkgs.qt6.full v6.8.1
+
+    # pyqt6 config, starting at artiq 9
+    #"PyQt6 >= 6.0.0",
+
+    # pyqt5 config, for artiq 8
+    "pyqt5 >= 5.15.9",
+    "pyqt5-qt5 >= 5.15.2",
+    "pyqt5-sip >= 12.12.2"
+
+
 ]
 
 # https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#dependencies-optional-dependencies
-[project.optional-dependencies]
-PySide6-Essentials = [
-  "PySide6-Essentials >= 6.0.0",
-]
-PyQt6 = [
-  "PyQt6 >= 6.0.0",
-]
-
-
-name = "uv2nix-template"
-version = "0.1.0"
-requires-python = ">=3.10,<3.12"
+#[project.optional-dependencies]
+#PySide6-Essentials = [
+#  "PySide6-Essentials >= 6.0.0",
+#]
+#PyQt6 = [
+#  "PyQt6 >= 6.0.0",
+#]
 
 [build-system]
 requires = ["setuptools"]
