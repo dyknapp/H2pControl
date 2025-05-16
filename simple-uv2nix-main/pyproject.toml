@@ -1,16 +1,19 @@
 [project]
+dependencies = [
+    "setuptools",
+    "artiq @ git+https://gitlab.com/aion-physics/code/artiq/forks/artiq_fork.git",
+    "sipyco @ git+https://github.com/m-labs/sipyco.git",
+    #l"pythonparser @ git+https://github.com/m-labs/pythonparser.git",
+    #"numpy>=1.20.0",
+    #"llvmlite>=0.44.0",
+    "pyqt5=>5.15.9",
+    "pyqt5-qt5 =>5.15.2",
+    "pyqt5-sip =>12.12.2",
+]
+
 name = "uv2nix-template"
 version = "0.1.0"
 requires-python = ">=3.10,<3.12"
-dependencies = [
-    "setuptools",
-    "artiq @ git+https://github.com/m-labs/artiq.git",
-    "sipyco @ git+https://github.com/m-labs/sipyco.git",
-    "pythonparser @ git+https://github.com/m-labs/pythonparser.git",
-    "numpy>=1.20.0",
-    "llvmlite>=0.44.0",
-    "PyQt6>=6.4.0"
-]
 
 [build-system]
 requires = ["setuptools"]
