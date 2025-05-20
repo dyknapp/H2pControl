@@ -50,13 +50,14 @@
           final: prev: {
             artiq = prev.artiq.overrideAttrs (old: {
               buildInputs = (old.buildInputs or [ ]) ++ [ final.setuptools ];
-              propagatedBuildInputs =
-                super.artiq.propagatedBuildInputs  ++
-                [
-                  qt5.qtsvg
-                ];
-
-                              
+              propagatedBuildInputs = (old.propagatedBuildInputs or [ ]) ++ [
+                pkgs.qt5.qtsvg
+              ];
+              nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ 
+                pkgs.qt5.wrapQtAppsHook 
+                pkgs.makeWrapper
+              ];
+              dontWrapQtApps = false;
             });
             artiq-comtools = prev.artiq-comtools.overrideAttrs (old: {
               buildInputs = (old.buildInputs or [ ]) ++ [ final.setuptools ];
@@ -104,7 +105,7 @@
                 pkgs.stdenv.cc.cc.lib
                 pkgs.glib
                 pkgs.zlib
-                "/run/opgengl-driver"
+                # "/run/opgengl-driver"
                 pkgs.libxkbcommon
                 pkgs.fontconfig
                 pkgs.xorg.libX11
@@ -159,7 +160,7 @@
                 pkgs.stdenv.cc.cc.lib
                 pkgs.glib
                 pkgs.zlib
-                "/run/opgengl-driver"
+                # "/run/opgengl-driver"
                 pkgs.libxkbcommon
                 pkgs.fontconfig
                 pkgs.xorg.libX11
@@ -176,10 +177,20 @@
                 pkgs.xorg.xcbutilwm
 
                 pkgs.zstd
+
+                pkgs.qt5.wrapQtAppsHook
+                pkgs.makeWrapper
+                pkgs.bashInteractive
               ];
 
             editablePythonSet = pythonSet.overrideScope editableOverlay;
-            virtualenv = editablePythonSet.mkVirtualEnv "artiq-dev-env" workspace.deps.all;
+            virtualenv = (editablePythonSet.mkVirtualEnv "artiq-dev-env" workspace.deps.all).overrideAttrs (old: {
+              nativeBuildInputs = (old.nativeBuildInputs or []) ++ [
+                pkgs.qt5.wrapQtAppsHook
+                pkgs.makeWrapper
+              ];
+              dontWrapQtApps = false;
+            });
           in
           pkgs.mkShell {
             nativeBuildInputs = [ ];
@@ -200,6 +211,10 @@
               export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath libraries}"
               export QT_PLUGIN_PATH="${pkgs.qt5.qtbase.bin}/lib/qt-${pkgs.qt5.qtbase.version}/plugins"
               export QT_QPA_PLATFORM=xcb
+
+              bashdir=$(mktemp -d)
+              makeWrapper "$(type -p bash)" "$bashdir/bash" "''${qtWrapperArgs[@]}"
+              exec "$bashdir/bash"
 
               echo "========================================="
               echo "Debug information:"
