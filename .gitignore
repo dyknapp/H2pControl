@@ -2,6 +2,8 @@
 __pycache__
 client/internal/assets/python-libs/data
 
+h2pcontrol
 
+h2pcontrol_manager
 
 *.egg-info

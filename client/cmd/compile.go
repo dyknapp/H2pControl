@@ -6,12 +6,9 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 
-	"github.com/kluctl/go-embed-python/embed_util"
-	"h2pcontrol.client/internal/assets/python-libs/data"
-
-	"github.com/kluctl/go-embed-python/python"
 	"github.com/spf13/cobra"
 	"h2pcontrol.client/internal"
 )
@@ -79,24 +76,13 @@ var compile = &cobra.Command{
 			os.Exit(1)
 		}
 
-		ep, err := python.NewEmbeddedPython("betterproto")
-		check(err)
-
-		tmpDir := filepath.Join(os.TempDir(), "go-h2pcontrol")
-
-		// Get the python libraries we embedded
-		ef, err := embed_util.NewEmbeddedFilesWithTmpDir(data.Data, tmpDir+"-h2pcontrol-lib", true)
-		check(err)
-
-		extractedPath := ef.GetExtractedPath()
-		ep.AddPythonPath(extractedPath)
-
 		protocPath, err := internal.ExtractProtoc()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to extract protoc: %v\n", err)
 			os.Exit(1)
 		}
 
+		// TODO: fix this rm this
 		outDir := filepath.Join(os.TempDir(), "h2pcontrol-temp")
 		os.MkdirAll(outDir, 0755)
 
@@ -107,26 +93,28 @@ var compile = &cobra.Command{
 		err = protoCompile(protocPath, protoDir, protoOutDir)
 		check(err)
 
+		fmt.Printf("Compiled files")
+
 		// Move the pyproject.toml file, required to make a build
 		fmt.Printf("%s%s\n%s", colorPurple, progressMessages[1], colorNone)
-		copyPyrojectToml(outDir)
+		copyPyProjectToml(outDir)
 
 		// Build the package
 		fmt.Printf("%s%s\n%s", colorPurple, progressMessages[2], colorNone)
-		err = buildPackage(ep, outDir)
+		err = buildPackage(outDir)
 		check(err)
 
 		// Install the dist locally
 		fmt.Printf("%s%s\n%s", colorPurple, progressMessages[3], colorNone)
-
 		distFile, err := findBuildPackage(outDir)
 		check(err)
 		installPackage(distFile)
 
 		fmt.Printf("%sPackage installed into your Python environment's site-packages.%s\n", colorPurple, colorNone)
 
+		fmt.Println(outDir)
 		// Clean up
-		err = os.RemoveAll(outDir)
+		// err = os.RemoveAll(outDir)
 		check(err)
 	},
 }
@@ -142,16 +130,17 @@ func installPackage(distFile string) {
 }
 
 func findBuildPackage(outDir string) (string, error) {
-	distDir := filepath.Join(outDir, distDirName)
+	distDir := path.Join(outDir, distDirName)
 	files, err := os.ReadDir(distDir)
 	if err != nil {
+		fmt.Printf("Error! %s", protoDir)
 		panic(err)
 	}
 
 	var distFile string
 	for _, f := range files {
-		if !f.IsDir() && (filepath.Ext(f.Name()) == gzipExt || filepath.Ext(f.Name()) == wheelExt) {
-			distFile = filepath.Join(distDir, f.Name())
+		if !f.IsDir() && (path.Ext(f.Name()) == gzipExt || path.Ext(f.Name()) == wheelExt) {
+			distFile = path.Join(distDir, f.Name())
 			break
 		}
 	}
@@ -161,7 +150,7 @@ func findBuildPackage(outDir string) (string, error) {
 	return distFile, nil
 }
 
-func copyPyrojectToml(outDir string) {
+func copyPyProjectToml(outDir string) {
 	srcFile, err := os.Open(pyprojectTomlFile)
 	check(err)
 	content, err := io.ReadAll(srcFile)
@@ -184,10 +173,17 @@ func copyPyrojectToml(outDir string) {
 }
 
 func protoCompile(protocPath string, protoDir string, outDir string) error {
-
 	protoFiles, err := filepath.Glob(filepath.Join(protoDir, protoFilePattern))
 	if err != nil || len(protoFiles) == 0 {
 		return fmt.Errorf(errNoProtoFiles, protoDir)
+	}
+
+	// Verify betterproto2_compiler is installed
+	checkCmd := exec.Command("python", "-c", "import betterproto2_compiler; print('betterproto2_compiler found')")
+	checkCmd.Stdout = os.Stdout
+	checkCmd.Stderr = os.Stderr
+	if err := checkCmd.Run(); err != nil {
+		return fmt.Errorf("betterproto2_compiler not found, please install it with: pip install betterproto2")
 	}
 
 	protocArgs := []string{
@@ -205,17 +201,12 @@ func protoCompile(protocPath string, protoDir string, outDir string) error {
 	return nil
 }
 
-func buildPackage(ep *python.EmbeddedPython, outDir string) error {
-	buildCmd, err := ep.PythonCmd("-m", "build", "--no-isolation", outDir)
-	if err != nil {
-		panic(err)
-	}
+func buildPackage(outDir string) error {
+	fmt.Printf("%s%s\n%s", colorPurple, progressMessages[2], colorNone)
+	buildCmd := exec.Command("python", "-m", "build", "--no-isolation", outDir)
 	buildCmd.Stdout = os.Stdout
 	buildCmd.Stderr = os.Stderr
-	if err := buildCmd.Run(); err != nil {
-		return fmt.Errorf("python build failed: %v", err)
-	}
-	return nil
+	return buildCmd.Run()
 }
 
 func check(err error) {
