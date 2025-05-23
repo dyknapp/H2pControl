@@ -1,8 +1,8 @@
 # H2pControl
 
-
-
 Requirements:
+
+You need to have UV installed
 
 pip packages
 

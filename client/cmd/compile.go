@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/BurntSushi/toml"
 	"github.com/spf13/cobra"
 	"h2pcontrol.client/internal"
 )
@@ -51,8 +52,8 @@ const (
 	errNameRequired     = "Error: --name is required"
 	errNoProtoFiles     = "no .proto files found in %s"
 	errProtocFailed     = "failed to run protoc command: %v"
-	errPythonBuild      = "python build failed: %v"
-	errPipInstall       = "pip install failed: %v"
+	errPythonBuild      = "uv build failed: %v"
+	errPipInstall       = "uv pip install failed: %v"
 	errNoDistFile       = "no .tar.gz or .whl file found in dist directory"
 	errExtractProtoc    = "Failed to extract protoc: %v"
 )
@@ -97,7 +98,7 @@ var compile = &cobra.Command{
 
 		// Move the pyproject.toml file, required to make a build
 		fmt.Printf("%s%s\n%s", colorPurple, progressMessages[1], colorNone)
-		copyPyProjectToml(outDir)
+		copyPyProjectToml(outDir, name)
 
 		// Build the package
 		fmt.Printf("%s%s\n%s", colorPurple, progressMessages[2], colorNone)
@@ -110,23 +111,11 @@ var compile = &cobra.Command{
 		check(err)
 		installPackage(distFile)
 
-		fmt.Printf("%sPackage installed into your Python environment's site-packages.%s\n", colorPurple, colorNone)
+		fmt.Printf("%sPackage installed. %s\n", colorPurple, colorNone)
 
-		fmt.Println(outDir)
-		// Clean up
-		// err = os.RemoveAll(outDir)
+		err = os.RemoveAll(outDir)
 		check(err)
 	},
-}
-
-func installPackage(distFile string) {
-	pipCmd := exec.Command(pythonPipCommand, "install", pipForceReinstall, distFile)
-	pipCmd.Stdout = os.Stdout
-	pipCmd.Stderr = os.Stderr
-	if err := pipCmd.Run(); err != nil {
-		fmt.Fprintf(os.Stderr, errPipInstall+"\n", err)
-		os.Exit(1)
-	}
 }
 
 func findBuildPackage(outDir string) (string, error) {
@@ -150,22 +139,31 @@ func findBuildPackage(outDir string) (string, error) {
 	return distFile, nil
 }
 
-func copyPyProjectToml(outDir string) {
+func copyPyProjectToml(outDir string, name string) {
 	srcFile, err := os.Open(pyprojectTomlFile)
 	check(err)
 	content, err := io.ReadAll(srcFile)
 	check(err)
-	fmt.Printf("Contents of %s:\n%s\n", pyprojectTomlFile, string(content))
 
-	// Rewind the file pointer to the beginning for copying
-	_, err = srcFile.Seek(0, io.SeekStart)
+	// Set the name from the cmd line arguments
+	var config map[string]interface{}
+	err = toml.Unmarshal(content, &config)
 	check(err)
-	defer srcFile.Close()
+
+	if project, ok := config["project"].(map[string]interface{}); ok {
+		project["name"] = name
+
+	}
+	newContent, err := toml.Marshal(config)
+	check(err)
+
+	fmt.Printf("Modified contents of %s:\n%s\n", pyprojectTomlFile, string(newContent))
+
 	destFile, err := os.Create(filepath.Join(outDir, pyprojectTomlFile))
 	check(err)
 	defer destFile.Close()
 
-	_, err = io.Copy(destFile, srcFile)
+	_, err = destFile.WriteString(string(newContent))
 	check(err)
 
 	err = destFile.Sync()
@@ -202,11 +200,36 @@ func protoCompile(protocPath string, protoDir string, outDir string) error {
 }
 
 func buildPackage(outDir string) error {
-	fmt.Printf("%s%s\n%s", colorPurple, progressMessages[2], colorNone)
-	buildCmd := exec.Command("python", "-m", "build", "--no-isolation", outDir)
+	checkCmd := exec.Command("uv", "--version")
+	if err := checkCmd.Run(); err != nil {
+		return fmt.Errorf("uv not found, please install it with: pip install uv")
+	}
+
+	buildCmd := exec.Command("uv", "build", outDir)
 	buildCmd.Stdout = os.Stdout
 	buildCmd.Stderr = os.Stderr
 	return buildCmd.Run()
+}
+
+func installPackage(distFile string) {
+	installCmd := exec.Command("uv", "pip", "install", distFile)
+	installCmd.Dir = "."
+	installCmd.Stdout = os.Stdout
+	installCmd.Stderr = os.Stderr
+	if err := installCmd.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to install package: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Add as dependency with --frozen flag
+	addCmd := exec.Command("uv", "add", "--frozen", distFile)
+	addCmd.Dir = "."
+	addCmd.Stdout = os.Stdout
+	addCmd.Stderr = os.Stderr
+	if err := addCmd.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, errPipInstall+"\n", err)
+		os.Exit(1)
+	}
 }
 
 func check(err error) {
