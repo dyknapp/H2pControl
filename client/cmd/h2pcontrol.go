@@ -39,7 +39,7 @@ func Run(c pb.ManagerClient, ctx context.Context, runCommand string, server *pb.
 	restart := func() {
 		if cmd != nil && cmd.Process != nil {
 			if runtime.GOOS == "windows" {
-				cmd.Process.Signal(os.Interrupt) // Sends CTRL_BREAK_EVENT
+				cmd.Process.Signal(os.Interrupt) // Sends CTRL_BREAK_EVENT which we listen to within python
 			} else {
 				cmd.Process.Signal(syscall.SIGTERM)
 			}

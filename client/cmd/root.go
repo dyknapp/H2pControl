@@ -54,7 +54,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(
 		&managerAddr,
 		"manager",
-		"localhost:50051",
+		"127.0.0.1:50051",
 		"Address of the manager gRPC server",
 	)
 	viper.BindPFlag("manager", rootCmd.PersistentFlags().Lookup("manager"))
