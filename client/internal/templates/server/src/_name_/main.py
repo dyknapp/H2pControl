@@ -30,14 +30,12 @@ async def main(port_override=None):
     if sys.platform != "win32":
         for sig in (signal.SIGINT, signal.SIGTERM):
             loop.add_signal_handler(sig, _signal_handler)
-        await should_stop.wait()
     else:
-        # Windows: Use synchronous signal.signal for SIGBREAK and SIGINT
-        signal.signal(signal.SIGINT, _signal_handler)  # Ctrl+C
+        signal.signal(signal.SIGINT, lambda s, f: _signal_handler())
         if hasattr(signal, "SIGBREAK"):
-            signal.signal(
-                signal.SIGBREAK, _signal_handler
-            )  # Ctrl+Break/CTRL_BREAK_EVENT
+            signal.signal(signal.SIGBREAK, lambda s, f: _signal_handler())
+
+    await should_stop.wait()
 
     logger.info("Shutting down server...")
     server.close()
