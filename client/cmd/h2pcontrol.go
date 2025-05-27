@@ -181,13 +181,13 @@ func runHeartbeat(client pb.ManagerClient) {
 
 	// Receive heartbeats
 	for {
-		pong, err := stream.Recv()
+		_, err := stream.Recv()
 		if err != nil {
 			log.Printf("Error receiving pong: %v", err)
 			log.Printf("The manager has become unavailable")
 			return
 		}
-		log.Printf("Received heartbeat from manager: healthy=%v, ts=%d", pong.Healthy, pong.Timestamp)
+		// log.Printf("Received heartbeat from manager: healthy=%v, ts=%d", pong.Healthy, pong.Timestamp)
 	}
 }
 
