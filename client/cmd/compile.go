@@ -77,6 +77,16 @@ var compile = &cobra.Command{
 			os.Exit(1)
 		}
 
+		pyProjectName, err := getPyProjectName()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to get pyproject name: %v\n", err)
+			os.Exit(1)
+		}
+		if pyProjectName == name {
+			fmt.Fprintf(os.Stderr, "The proto package can not have the same name as your python package, please use a different --name:\n")
+			os.Exit(1)
+		}
+
 		protocPath, err := internal.ExtractProtoc()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to extract protoc: %v\n", err)
@@ -113,8 +123,8 @@ var compile = &cobra.Command{
 
 		fmt.Printf("%sPackage installed. %s\n", colorPurple, colorNone)
 
-		err = os.RemoveAll(outDir)
-		check(err)
+		// err = os.RemoveAll(outDir)
+		// check(err)
 	},
 }
 
@@ -137,6 +147,28 @@ func findBuildPackage(outDir string) (string, error) {
 		return "", errors.New(errNoDistFile)
 	}
 	return distFile, nil
+}
+
+func getPyProjectName() (string, error) {
+	srcFile, err := os.Open(pyprojectTomlFile)
+	check(err)
+	content, err := io.ReadAll(srcFile)
+	check(err)
+
+	var config map[string]interface{}
+	err = toml.Unmarshal(content, &config)
+	check(err)
+
+	if project, ok := config["project"].(map[string]interface{}); ok {
+		name, ok := project["name"]
+		if ok {
+			if nameStr, ok := name.(string); ok {
+				return nameStr, nil
+			}
+
+		}
+	}
+	return "", errors.New("pyproject.toml could not be found")
 }
 
 func copyPyProjectToml(outDir string, name string) {
