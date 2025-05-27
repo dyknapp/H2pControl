@@ -81,7 +81,13 @@ func (r *ServerRegistry) FetchSpecificServer(ctx context.Context, req *pb.FetchS
 	}
 
 	if entry, ok := r.servers[req.GetAddr()]; ok {
-		proto_path := filepath.Join("proto", entry.Metadata.GetServerName(), entry.Metadata.GetVersion())
+		tmpBase := os.TempDir()
+		proto_path := filepath.Join(
+			tmpBase,
+			"h2pcontrol_proto",
+			entry.Metadata.GetServerName(),
+			entry.Metadata.GetVersion(),
+		)
 
 		proto_files, err := os.ReadDir(proto_path)
 		if err != nil {
@@ -130,8 +136,10 @@ func (r *ServerRegistry) UpdateHeartbeat(addr string) {
 
 func SaveProtoFiles(in *pb.RegisterRequest) error {
 
+	tmpBase := os.TempDir()
 	dirPath := filepath.Join(
-		"proto",
+		tmpBase,
+		"h2pcontrol_proto",
 		in.Server.GetServerName(),
 		in.Server.GetVersion(),
 	)

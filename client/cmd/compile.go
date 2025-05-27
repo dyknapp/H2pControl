@@ -101,6 +101,7 @@ var compile = &cobra.Command{
 		fmt.Printf("%s%s\n%s", colorPurple, progressMessages[0], colorNone)
 		protoOutDir := outDir + fmt.Sprintf("/src/%s/", name)
 		os.MkdirAll(protoOutDir, 0755)
+		
 		err = protoCompile(protocPath, protoDir, protoOutDir)
 		check(err)
 
