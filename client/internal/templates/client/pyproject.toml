@@ -1,0 +1,15 @@
+
+[project]
+name = "_name_"
+version = "1.0"
+description = "Client initialized by h2pcontrol cli"
+authors = [{ name = "Your Name", email = "you@example.com" }]
+requires-python = ">=3.11, <4.0"
+
+# uv pip install --index laserlab <package> OR
+# uv add --index laserlab <package>
+# uv pip install --index laserlab <package> OR
+# uv add --index laserlab <package>
+[[tool.uv.index]]
+name = "laserlab"
+url = "http://laserlab-mini-s.betta-halibut.ts.net:8080"

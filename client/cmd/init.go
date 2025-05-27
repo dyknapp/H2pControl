@@ -37,7 +37,6 @@ var init_cmd = &cobra.Command{
 			return
 		}
 
-		// Rename files and replace placeholders
 		if err := renameAndReplace(projectType, projectName); err != nil {
 			fmt.Printf("Failed to finalize project: %v\n", err)
 			return
@@ -48,9 +47,7 @@ var init_cmd = &cobra.Command{
 }
 
 func renameAndReplace(projectType, projectName string) error {
-	// Rename folders/files and replace placeholders
 	if projectType == "server" {
-		// Rename files/folders
 		if err := os.Rename("src/_name_", "src/"+projectName); err != nil {
 			return err
 		}
@@ -63,7 +60,7 @@ func renameAndReplace(projectType, projectName string) error {
 		replacePlaceholderValues("h2pcontrol.server.toml", "_name_", projectName)
 		replacePlaceholderValues(filepath.Join("proto", projectName+".proto"), "__name__", projectName)
 	} else if projectType == "client" {
-
+		replacePlaceholderValues("pyproject.toml", "_name_", projectName)
 		// replacePlaceholderValues("pyproject.toml", "_name_", projectName)
 	}
 	return nil
