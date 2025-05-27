@@ -13,11 +13,14 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"runtime"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/phayes/freeport"
 	"google.golang.org/grpc"
 	pb "h2pcontrol.client/pb"
 )
@@ -27,23 +30,15 @@ var (
 )
 
 func Run(c pb.ManagerClient, ctx context.Context, runCommand string, server *pb.ServerDefinition, proto_path string) {
-	RegisterService(c, ctx, server, proto_path)
 
 	// Check if the last entry is a file / check its path, then if it is a file and we have 1 arg it shuold just run that because
 	// we can assume its an executable? We cn also check if its an executable?
-
 	args := strings.Fields(runCommand)
 	if len(args) < 2 {
 		fmt.Print("invalid command format %s: need 'shell command'", args)
 		return
 	}
-
-	// Watch for file changes:
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		panic(err)
-	}
-	defer watcher.Close()
+	filepath := args[len(args)-1]
 
 	cmdCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -51,8 +46,21 @@ func Run(c pb.ManagerClient, ctx context.Context, runCommand string, server *pb.
 	var cmd *exec.Cmd
 	restart := func() {
 		if cmd != nil && cmd.Process != nil {
-			_ = cmd.Process.Kill()
+			if runtime.GOOS == "windows" {
+				cmd.Process.Signal(os.Interrupt) // Sends CTRL_BREAK_EVENT
+			} else {
+				cmd.Process.Signal(syscall.SIGTERM)
+			}
 			cmd.Wait()
+		}
+		if server.Port == "" {
+			port, err := freeport.GetFreePort()
+			if err != nil {
+				panic(err)
+			}
+			args = append(args, "--port")
+			args = append(args, strconv.Itoa(port))
+			server.Port = strconv.Itoa(port)
 		}
 		c, err := startCommand(cmdCtx, args)
 		if err != nil {
@@ -65,38 +73,23 @@ func Run(c pb.ManagerClient, ctx context.Context, runCommand string, server *pb.
 	restart()
 
 	// TODO: Make this more general, but for now will do for python
-	err = watcher.Add(args[len(args)-1])
+	fileWatcher, err := NewFileWatcher(300*time.Millisecond, restart)
 	if err != nil {
 		panic(err)
 	}
+	defer fileWatcher.Close()
+
+	if err := fileWatcher.Watch(filepath); err != nil {
+		panic(err)
+	}
+
+	// Register the server after it has been started, as otherwise it might not register even though it is not available
+	// Do note, we are not checking if the python server itself has any errors.
+	RegisterService(c, ctx, server, proto_path)
 
 	go runHeartbeat(c)
 
-	// Actual watcher events
-	go func() {
-		debounce := time.Now()
-		for {
-			select {
-			case event, ok := <-watcher.Events:
-				if !ok {
-					return
-				}
-				if event.Op&(fsnotify.Write|fsnotify.Create) != 0 && time.Since(debounce) > 300*time.Millisecond {
-					fmt.Println("File changed, restarting...")
-					restart()
-					debounce = time.Now()
-				}
-			case err, ok := <-watcher.Errors:
-				if !ok {
-					return
-				}
-				fmt.Println("Watcher error:", err)
-			}
-		}
-	}()
-
 	waitForShutdown(cmd)
-
 }
 
 func startCommand(ctx context.Context, args []string) (*exec.Cmd, error) {
@@ -252,4 +245,58 @@ func GetStub(c pb.ManagerClient, ctx context.Context, service_name string, versi
 	}
 
 	log.Printf("Finished receiving stubs")
+}
+
+type FileWatcher struct {
+	watcher    *fsnotify.Watcher
+	debounce   time.Duration
+	onModified func()
+}
+
+func NewFileWatcher(debounceTime time.Duration, onModified func()) (*FileWatcher, error) {
+	w, err := fsnotify.NewWatcher()
+	if err != nil {
+		return nil, err
+	}
+
+	return &FileWatcher{
+		watcher:    w,
+		debounce:   debounceTime,
+		onModified: onModified,
+	}, nil
+}
+
+func (fw *FileWatcher) Watch(path string) error {
+	if err := fw.watcher.Add(path); err != nil {
+		return err
+	}
+
+	go fw.watchLoop()
+	return nil
+}
+
+func (fw *FileWatcher) watchLoop() {
+	debounce := time.Now()
+	for {
+		select {
+		case event, ok := <-fw.watcher.Events:
+			if !ok {
+				return
+			}
+			if event.Op&(fsnotify.Write|fsnotify.Create) != 0 && time.Since(debounce) > fw.debounce {
+				fmt.Println("File changed, restarting...")
+				fw.onModified()
+				debounce = time.Now()
+			}
+		case err, ok := <-fw.watcher.Errors:
+			if !ok {
+				return
+			}
+			fmt.Println("Watcher error:", err)
+		}
+	}
+}
+
+func (fw *FileWatcher) Close() error {
+	return fw.watcher.Close()
 }

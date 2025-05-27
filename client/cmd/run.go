@@ -30,6 +30,8 @@ var run = &cobra.Command{
 		if err != nil {
 			panic(fmt.Errorf("could not load pyproject config file: %v", err))
 		}
+
+
 		service := pb.ServerDefinition{
 			Port:       h2p_config.GetString("configuration.port"),
 			ServerName: pyproject_config.GetString("project.name"),
@@ -44,3 +46,5 @@ func init() {
 	run.Flags()
 	rootCmd.AddCommand(run)
 }
+
+
