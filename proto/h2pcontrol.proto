@@ -11,7 +11,7 @@ package h2pcontrol;
 service Manager {
   rpc GetStub(StubRequest) returns (StubResponse);
   rpc RegisterServer(RegisterRequest) returns (RegisterResponse);
-  rpc Heartbeat(Empty) returns (HeartbeatPong);
+  rpc Heartbeat(stream HeartbeatPing) returns (stream HeartbeatPong);
 
   rpc FetchServers(Empty) returns (FetchServersResponse);
   rpc FetchSpecificServer(FetchSpecificServerRequest) returns (FetchSpecificServerResponse);
@@ -20,8 +20,13 @@ service Manager {
 message Empty {}
 
 
+message HeartbeatPing {
+  int64 timestamp = 2;
+}
+
 message HeartbeatPong {
   bool healthy = 1;
+  int64 timestamp = 3;
 }
 
 message ServerDefinition {
@@ -58,7 +63,6 @@ message FetchSpecificServerResponse {
   FetchServerDefinition server_definition = 1;
   string proto = 2;
 }
-
 
 
 message StubRequest {

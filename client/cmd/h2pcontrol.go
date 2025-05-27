@@ -20,7 +20,6 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/phayes/freeport"
-	"google.golang.org/grpc"
 	pb "h2pcontrol.client/pb"
 )
 
@@ -160,20 +159,35 @@ func RegisterService(c pb.ManagerClient, ctx context.Context, server *pb.ServerD
 }
 
 func runHeartbeat(client pb.ManagerClient) {
+	// This is a bidirectional streaming heartbeat.
+	stream, err := client.Heartbeat(context.Background())
+	if err != nil {
+		log.Fatalf("Failed to start heartbeat: %v", err)
+	}
+
+	// Send heartbeats
+	go func() {
+		for {
+			ping := &pb.HeartbeatPing{
+				Timestamp: time.Now().Unix(),
+			}
+			if err := stream.Send(ping); err != nil {
+				log.Printf("Error sending ping: %v", err)
+				return
+			}
+			time.Sleep(1 * time.Second)
+		}
+	}()
+
+	// Receive heartbeats
 	for {
-
-		_, err := client.Heartbeat(context.Background(), &pb.Empty{}, grpc.EmptyCallOption{})
+		pong, err := stream.Recv()
 		if err != nil {
-			log.Fatalf("Failed to start heartbeat stream: %v", err)
+			log.Printf("Error receiving pong: %v", err)
+			log.Printf("The manager has become unavailable")
+			return
 		}
-
-		if err != nil {
-			log.Fatalf("Failed to receive heartbeat response: %v", err)
-		}
-
-		// log.Printf("Received pong from server: %v", pong.Healthy)
-
-		time.Sleep(1 * time.Second)
+		log.Printf("Received heartbeat from manager: healthy=%v, ts=%d", pong.Healthy, pong.Timestamp)
 	}
 }
 

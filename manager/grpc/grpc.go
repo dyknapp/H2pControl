@@ -28,38 +28,6 @@ type server struct {
 	stub_service *internal.StubService
 }
 
-// func (s *server) RegisterServer(ctx context.Context, in *pb.RegisterRequest) (*pb.RegisterResponse, error) {
-// 	peer, _ := peer.FromContext(ctx)
-// 	addr := peer.Addr.String()
-
-// 	entry := &serviceEntry{
-// 		lastSeen:  time.Now(),
-// 		metadata:  in.Server,
-// 		heartbeat: make(chan struct{}),
-// 	}
-
-// 	s.Lock()
-// 	s.activeServers[addr] = entry
-// 	s.Unlock()
-
-// 	log.Printf("Server connected: '%v' running '%v.%v'", addr, in.Server.GetServerName(), in.Server.GetVersion())
-
-// 	var dirPath = filepath.Join(
-// 		"proto",
-// 		in.Server.ServerName,
-// 		in.Server.Version)
-
-// 	os.MkdirAll(dirPath, 0755)
-
-// 	for _, file := range in.Server.ProtoFiles {
-// 		os.WriteFile(filepath.Join(dirPath, file.Name), file.Content, 0644)
-// 	}
-
-// 	return &pb.RegisterResponse{
-// 		Result: "Server registered successfully",
-// 	}, nil
-// }
-
 func (s *server) GetStub(ctx context.Context, in *pb.StubRequest) (*pb.StubResponse, error) {
 	return s.stub_service.GetStub(ctx, in)
 }
@@ -78,12 +46,53 @@ func (s *server) FetchSpecificServer(ctx context.Context, in *pb.FetchSpecificSe
 	return s.registry.FetchSpecificServer(ctx, in)
 }
 
-func (s *server) Heartbeat(ctx context.Context, in *pb.Empty) (*pb.HeartbeatPong, error) {
-	peer, _ := peer.FromContext(ctx)
-	addr := peer.Addr.String()
-	s.registry.UpdateHeartbeat(addr)
-	log.Printf("Heartbeat from %v", addr)
-	return &pb.HeartbeatPong{Healthy: true}, nil
+// func (s *server) Heartbeat(ctx context.Context, in *pb.Empty) (*pb.HeartbeatPong, error) {
+// 	peer, _ := peer.FromContext(ctx)
+// 	addr := peer.Addr.String()
+// 	s.registry.UpdateHeartbeat(addr)
+// 	log.Printf("Heartbeat from %v", addr)
+// 	return &pb.HeartbeatPong{Healthy: true}, nil
+// }
+
+func (s *server) Heartbeat(stream pb.Manager_HeartbeatServer) error {
+	peerInfo, _ := peer.FromContext(stream.Context())
+	addr := peerInfo.Addr.String()
+
+	// Start a goroutine to send heartbeats to the client
+	done := make(chan struct{})
+	go func() {
+		ticker := time.NewTicker(2 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				pong := &pb.HeartbeatPong{
+					Healthy:   true,
+					Timestamp: time.Now().Unix(),
+				}
+				if err := stream.Send(pong); err != nil {
+					log.Printf("Error sending heartbeat pong: %v", err)
+					close(done)
+					return
+				}
+			case <-done:
+				return
+			}
+		}
+	}()
+
+	for {
+		ping, err := stream.Recv()
+		if err != nil {
+			log.Printf("Heartbeat stream closed from %v: %v", addr, err)
+			s.registry.RemoveServer(addr)
+			close(done)
+			return nil
+		}
+
+		s.registry.UpdateHeartbeat(addr)
+		log.Printf("Received heartbeat from %v at %v", addr, time.Unix(ping.Timestamp, 0))
+	}
 }
 
 func RunServer() {
@@ -108,8 +117,6 @@ func RunServer() {
 	s := grpc.NewServer(serverOpts...)
 	pb.RegisterManagerServer(s, srv)
 	log.Printf("server listening at %v", lis.Addr())
-
-	go srv.registry.MonitorHeartbeats()
 
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve: %v", err)

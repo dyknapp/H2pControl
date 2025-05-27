@@ -113,33 +113,19 @@ func (r *ServerRegistry) FetchSpecificServer(ctx context.Context, req *pb.FetchS
 	return nil, fmt.Errorf("something went wrong fetching server %s", req.GetAddr())
 }
 
+func (r *ServerRegistry) RemoveServer(addr string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	delete(r.servers, addr)
+
+}
+
 func (r *ServerRegistry) UpdateHeartbeat(addr string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if entry, ok := r.servers[addr]; ok {
 		entry.LastSeen = time.Now()
 	}
-}
-
-func (r *ServerRegistry) MonitorHeartbeats() {
-
-	for {
-		r.mu.RLock()
-		for addr, entry := range r.servers {
-			if time.Since(entry.LastSeen) > 30*time.Second {
-				delete(r.servers, addr)
-				log.Printf("Server '%v' running '%v.%v' DISCONNECTED: did not send heartbeat in past 30 seconds", addr, entry.Metadata.ServerName, entry.Metadata.Version)
-			} else if time.Since(entry.LastSeen) > 2*time.Second {
-				log.Printf("Server '%v' running '%v.%v' did not respond to heartbeat", addr, entry.Metadata.ServerName, entry.Metadata.Version)
-			} else {
-				log.Printf("Server '%v' running '%v.%v' still alive", addr, entry.Metadata.ServerName, entry.Metadata.Version)
-
-			}
-		}
-		r.mu.RUnlock()
-		time.Sleep(5 * time.Second)
-	}
-
 }
 
 func SaveProtoFiles(in *pb.RegisterRequest) error {
