@@ -29,6 +29,9 @@ var (
 func Run(c pb.ManagerClient, ctx context.Context, runCommand string, server *pb.ServerDefinition, proto_path string) {
 	RegisterService(c, ctx, server, proto_path)
 
+	// Check if the last entry is a file / check its path, then if it is a file and we have 1 arg it shuold just run that because
+	// we can assume its an executable? We cn also check if its an executable?
+
 	args := strings.Fields(runCommand)
 	if len(args) < 2 {
 		fmt.Print("invalid command format %s: need 'shell command'", args)
@@ -62,7 +65,7 @@ func Run(c pb.ManagerClient, ctx context.Context, runCommand string, server *pb.
 	restart()
 
 	// TODO: Make this more general, but for now will do for python
-	err = watcher.Add(args[1])
+	err = watcher.Add(args[len(args)-1])
 	if err != nil {
 		panic(err)
 	}

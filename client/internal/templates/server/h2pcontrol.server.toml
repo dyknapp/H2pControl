@@ -1,5 +1,5 @@
 [configuration]
 port = "50057" # It is important to use the port from here
-run = "python3 src/_name_/main.py" # This is the run command, can use any language this way
+run = "uv run python src/_name_/main.py" # This is the run command, can use any language this way
 proto = "./proto" # This is the directory where the proto files are contained
 requests_to_influx = true # This is to send any incoming requests to influx, this goes through the manager 

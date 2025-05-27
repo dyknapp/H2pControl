@@ -7,3 +7,5 @@ h2pcontrol
 h2pcontrol_manager
 
 *.egg-info
+
+*.exe

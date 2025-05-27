@@ -7,4 +7,9 @@ name = "_name_"
 version = "1.0"
 description = "Project initialized by h2pcontrol cli"
 authors = [{ name = "Your Name", email = "you@example.com" }]
-requires-python = ">=3.7"
+requires-python = ">=3.11, <4.0"
+dependencies = [
+  "betterproto2==0.4.0",
+  "betterproto2-compiler==0.4.0",
+  "grpclib>=0.4.8",
+]
