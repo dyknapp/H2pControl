@@ -1,9 +1,7 @@
 package cmd
 
 import (
-	"archive/zip"
 	"bufio"
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -189,71 +187,6 @@ func runHeartbeat(client pb.ManagerClient) {
 		}
 		// log.Printf("Received heartbeat from manager: healthy=%v, ts=%d", pong.Healthy, pong.Timestamp)
 	}
-}
-
-func GetStubs(c pb.ManagerClient, ctx context.Context, dependencies []pb.ServerDefinition, language string) {
-
-	for _, dependency := range dependencies {
-		GetStub(c, ctx, dependency.ServerName, dependency.Version, language)
-	}
-}
-
-func extractZipData(zipData []byte, outputDir string) error {
-	zipReader, err := zip.NewReader(bytes.NewReader(zipData), int64(len(zipData)))
-	if err != nil {
-		return err
-	}
-
-	for _, file := range zipReader.File {
-		targetPath := filepath.Join(outputDir, filepath.Clean(file.Name))
-		if err := os.MkdirAll(filepath.Dir(targetPath), 0755); err != nil {
-			return err
-		}
-
-		if err := extractFile(file, targetPath); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func extractFile(zipFile *zip.File, targetPath string) error {
-	srcFile, err := zipFile.Open()
-	if err != nil {
-		return err
-	}
-	defer srcFile.Close()
-
-	dstFile, err := os.OpenFile(targetPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, zipFile.Mode())
-	if err != nil {
-		return err
-	}
-	defer dstFile.Close()
-
-	if _, err := io.Copy(dstFile, srcFile); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func GetStub(c pb.ManagerClient, ctx context.Context, service_name string, version string, language string) {
-	r, err := c.GetStub(ctx, &pb.StubRequest{ServerName: service_name, Version: version, Language: language})
-	if err != nil {
-		log.Fatalf("could not get stub file: %v", err)
-	}
-
-	dirPath := filepath.Join("stubs",
-		service_name,
-		language,
-		version)
-
-	if err := extractZipData(r.ZipData, dirPath); err != nil {
-		log.Fatalf("Not a valid zip file %s", err)
-	}
-
-	log.Printf("Finished receiving stubs")
 }
 
 type FileWatcher struct {
