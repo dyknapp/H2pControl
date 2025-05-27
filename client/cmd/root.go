@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	pb "h2pcontrol.client/pb"
@@ -19,12 +20,14 @@ const (
 	clientKey contextKey = "client"
 )
 
+var managerAddr string
+
 var rootCmd = &cobra.Command{
 	Use: "h2pcontrol",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 
 		// Initialize gRPC connection
-		conn, err := grpc.NewClient(*addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		conn, err := grpc.NewClient(managerAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			log.Fatalf("connection failed: %v", err)
 		}
@@ -45,6 +48,16 @@ var rootCmd = &cobra.Command{
 	},
 	Short: "h2pcontrol is a tool for managing grpc communication between different services",
 	Long:  "h2pcontrol is a tool for managing grpc communication between different services. This is the h2pcontrol client which allows you to register your service and consume other services. ",
+}
+
+func init() {
+	rootCmd.PersistentFlags().StringVar(
+		&managerAddr,
+		"manager",
+		"localhost:50051",
+		"Address of the manager gRPC server",
+	)
+	viper.BindPFlag("manager", rootCmd.PersistentFlags().Lookup("manager"))
 }
 
 func Execute() {

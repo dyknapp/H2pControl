@@ -5,7 +5,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -25,17 +24,13 @@ import (
 	pb "h2pcontrol.client/pb"
 )
 
-var (
-	addr = flag.String("addr", "127.0.0.1:50051", "the address to connect to")
-)
-
 func Run(c pb.ManagerClient, ctx context.Context, runCommand string, server *pb.ServerDefinition, proto_path string) {
 
-	// Check if the last entry is a file / check its path, then if it is a file and we have 1 arg it shuold just run that because
-	// we can assume its an executable? We cn also check if its an executable?
+	// Check if the last entry is a file / check its path, then if it is a file and we have 1 arg it should just run that because
+	// we can assume it's an executable? We can also check if it's an executable?
 	args := strings.Fields(runCommand)
 	if len(args) < 2 {
-		fmt.Print("invalid command format %s: need 'shell command'", args)
+		fmt.Printf("invalid command format %s: need 'shell command'", args)
 		return
 	}
 	filepath := args[len(args)-1]
