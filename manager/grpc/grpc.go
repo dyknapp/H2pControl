@@ -99,9 +99,9 @@ func RunServer() {
 	flag.Parse()
 	ip, err := getLocalIP()
 	if err != nil {
-		log.Fatalf("failed to get ip: %v", err)
+		log.Fatalf("failed to listen: %v", err)
 	}
-	lis, err := net.Listen("tcp4", fmt.Sprintf("%d:%d", ip, *port))
+	lis, err := net.Listen("tcp4", fmt.Sprintf("%s:%d", ip, *port))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
