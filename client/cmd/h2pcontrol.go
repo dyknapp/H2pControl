@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -130,6 +131,14 @@ func waitForShutdown(cmd *exec.Cmd) {
 
 func RegisterService(c pb.ManagerClient, ctx context.Context, server *pb.ServerDefinition, proto_dir_path string) {
 
+	// Get local ip address, we will send this over to the manager. If we do not do this, a server and manager both on localhost
+	// will make the server be registered on localhost, which  means other servers can't reach it.
+	ip, err := getLocalIP()
+	check(err)
+
+	server.Ip = ip
+	log.Println(server.Ip)
+
 	dirEntries, err := os.ReadDir(proto_dir_path)
 	if err != nil {
 		log.Fatalf("Unable to read proto dir: %v", err)
@@ -154,6 +163,45 @@ func RegisterService(c pb.ManagerClient, ctx context.Context, server *pb.ServerD
 	log.Printf("RegisterServer call took %v\n", time.Since(rpcStart))
 	log.Println(r.Result)
 
+}
+
+// https://stackoverflow.com/a/23558495
+func getLocalIP() (string, error) {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return "", fmt.Errorf("failed to get network interfaces: %v", err)
+	}
+
+	for _, iface := range ifaces {
+		// Skip loopback and down interfaces
+		if iface.Flags&net.FlagLoopback != 0 || iface.Flags&net.FlagUp == 0 {
+			continue
+		}
+
+		addrs, err := iface.Addrs()
+		if err != nil {
+			continue
+		}
+
+		for _, addr := range addrs {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+
+			// Skip loopback and IPv6 addresses
+			if ip == nil || ip.IsLoopback() || ip.To4() == nil {
+				continue
+			}
+
+			return ip.String(), nil
+		}
+	}
+
+	return "", fmt.Errorf("no suitable IP address found")
 }
 
 func runHeartbeat(client pb.ManagerClient) {

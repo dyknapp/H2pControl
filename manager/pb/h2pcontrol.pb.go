@@ -9,6 +9,8 @@ package h2pcontrol_manager
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	_ "google.golang.org/protobuf/types/known/anypb"
+	_ "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -156,9 +158,10 @@ func (x *HeartbeatPong) GetTimestamp() int64 {
 type ServerDefinition struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ServerName    string                 `protobuf:"bytes,1,opt,name=server_name,json=serverName,proto3" json:"server_name,omitempty"`
-	Port          string                 `protobuf:"bytes,2,opt,name=port,proto3" json:"port,omitempty"`
-	Version       string                 `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
-	ProtoFiles    []*File                `protobuf:"bytes,4,rep,name=proto_files,json=protoFiles,proto3" json:"proto_files,omitempty"`
+	Ip            string                 `protobuf:"bytes,2,opt,name=ip,proto3" json:"ip,omitempty"`
+	Port          string                 `protobuf:"bytes,3,opt,name=port,proto3" json:"port,omitempty"`
+	Version       string                 `protobuf:"bytes,4,opt,name=version,proto3" json:"version,omitempty"`
+	ProtoFiles    []*File                `protobuf:"bytes,5,rep,name=proto_files,json=protoFiles,proto3" json:"proto_files,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -196,6 +199,13 @@ func (*ServerDefinition) Descriptor() ([]byte, []int) {
 func (x *ServerDefinition) GetServerName() string {
 	if x != nil {
 		return x.ServerName
+	}
+	return ""
+}
+
+func (x *ServerDefinition) GetIp() string {
+	if x != nil {
+		return x.Ip
 	}
 	return ""
 }
@@ -686,19 +696,20 @@ var File_h2pcontrol_proto protoreflect.FileDescriptor
 const file_h2pcontrol_proto_rawDesc = "" +
 	"\n" +
 	"\x10h2pcontrol.proto\x12\n" +
-	"h2pcontrol\"\a\n" +
+	"h2pcontrol\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x19google/protobuf/any.proto\"\a\n" +
 	"\x05Empty\"-\n" +
 	"\rHeartbeatPing\x12\x1c\n" +
 	"\ttimestamp\x18\x02 \x01(\x03R\ttimestamp\"G\n" +
 	"\rHeartbeatPong\x12\x18\n" +
 	"\ahealthy\x18\x01 \x01(\bR\ahealthy\x12\x1c\n" +
-	"\ttimestamp\x18\x03 \x01(\x03R\ttimestamp\"\x94\x01\n" +
+	"\ttimestamp\x18\x03 \x01(\x03R\ttimestamp\"\xa4\x01\n" +
 	"\x10ServerDefinition\x12\x1f\n" +
 	"\vserver_name\x18\x01 \x01(\tR\n" +
-	"serverName\x12\x12\n" +
-	"\x04port\x18\x02 \x01(\tR\x04port\x12\x18\n" +
-	"\aversion\x18\x03 \x01(\tR\aversion\x121\n" +
-	"\vproto_files\x18\x04 \x03(\v2\x10.h2pcontrol.FileR\n" +
+	"serverName\x12\x0e\n" +
+	"\x02ip\x18\x02 \x01(\tR\x02ip\x12\x12\n" +
+	"\x04port\x18\x03 \x01(\tR\x04port\x12\x18\n" +
+	"\aversion\x18\x04 \x01(\tR\aversion\x121\n" +
+	"\vproto_files\x18\x05 \x03(\v2\x10.h2pcontrol.FileR\n" +
 	"protoFiles\"G\n" +
 	"\x0fRegisterRequest\x124\n" +
 	"\x06server\x18\x01 \x01(\v2\x1c.h2pcontrol.ServerDefinitionR\x06server\"*\n" +

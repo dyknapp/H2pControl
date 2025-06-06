@@ -97,11 +97,8 @@ func (s *server) Heartbeat(stream pb.Manager_HeartbeatServer) error {
 
 func RunServer() {
 	flag.Parse()
-	ip, err := getLocalIP()
-	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
-	}
-	lis, err := net.Listen("tcp4", fmt.Sprintf("%s:%d", ip, *port))
+
+	lis, err := net.Listen("tcp4", fmt.Sprintf(":%d", *port))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
@@ -125,43 +122,4 @@ func RunServer() {
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve: %v", err)
 	}
-}
-
-// https://stackoverflow.com/a/23558495
-func getLocalIP() (string, error) {
-	ifaces, err := net.Interfaces()
-	if err != nil {
-		return "", fmt.Errorf("failed to get network interfaces: %v", err)
-	}
-
-	for _, iface := range ifaces {
-		// Skip loopback and down interfaces
-		if iface.Flags&net.FlagLoopback != 0 || iface.Flags&net.FlagUp == 0 {
-			continue
-		}
-
-		addrs, err := iface.Addrs()
-		if err != nil {
-			continue
-		}
-
-		for _, addr := range addrs {
-			var ip net.IP
-			switch v := addr.(type) {
-			case *net.IPNet:
-				ip = v.IP
-			case *net.IPAddr:
-				ip = v.IP
-			}
-
-			// Skip loopback and IPv6 addresses
-			if ip == nil || ip.IsLoopback() || ip.To4() == nil {
-				continue
-			}
-
-			return ip.String(), nil
-		}
-	}
-
-	return "", fmt.Errorf("no suitable IP address found")
 }

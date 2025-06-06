@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"path/filepath"
 	"sync"
@@ -31,6 +32,15 @@ func NewServerRegistry() *ServerRegistry {
 }
 
 func (r *ServerRegistry) RegisterServer(ctx context.Context, in *pb.RegisterRequest, addr string) (*pb.RegisterResponse, error) {
+
+	_, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid address format: %v", err)
+	}
+
+	// Create new address with server's IP and original port
+	newAddr := net.JoinHostPort(in.Server.Ip, port)
+
 	entry := &ServerEntry{
 		LastSeen:  time.Now(),
 		Metadata:  in.Server,
@@ -40,10 +50,10 @@ func (r *ServerRegistry) RegisterServer(ctx context.Context, in *pb.RegisterRequ
 	log.Printf("Server wants to connect")
 
 	r.mu.Lock()
-	r.servers[addr] = entry
+	r.servers[newAddr] = entry
 	r.mu.Unlock()
 
-	log.Printf("Server connected: '%v' running '%v.%v'", addr, in.Server.GetServerName(), in.Server.GetVersion())
+	log.Printf("Server connected: '%v' running '%v.%v'", newAddr, in.Server.GetServerName(), in.Server.GetVersion())
 	SaveProtoFiles(in)
 
 	return &pb.RegisterResponse{
