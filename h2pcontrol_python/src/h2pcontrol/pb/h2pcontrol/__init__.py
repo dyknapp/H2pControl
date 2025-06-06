@@ -4,22 +4,28 @@
 # This file has been @generated
 
 __all__ = (
+    "DataPacket",
     "Empty",
     "FetchServerDefinition",
     "FetchServersResponse",
     "FetchSpecificServerRequest",
     "FetchSpecificServerResponse",
     "File",
+    "HeartbeatPing",
     "HeartbeatPong",
     "RegisterRequest",
     "RegisterResponse",
     "ServerDefinition",
     "StubRequest",
     "StubResponse",
+    "DataManagerStub",
+    "DataManagerBase",
     "ManagerStub",
     "ManagerBase",
 )
 
+import datetime
+from collections.abc import AsyncIterator, Iterable, Iterator
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -34,6 +40,28 @@ if TYPE_CHECKING:
     import grpclib.server
 
 betterproto2.check_compiler_version("0.4.0")
+
+
+@dataclass(eq=False, repr=False)
+class DataPacket(betterproto2.Message):
+    timestamp: "datetime.datetime | None" = betterproto2.field(
+        1, betterproto2.TYPE_MESSAGE, optional=True
+    )
+
+    proto_file: "str" = betterproto2.field(2, betterproto2.TYPE_STRING)
+
+    function: "str" = betterproto2.field(3, betterproto2.TYPE_STRING)
+
+    data_in: "_google__protobuf__.Any | None" = betterproto2.field(
+        4, betterproto2.TYPE_MESSAGE, optional=True
+    )
+
+    data_out: "_google__protobuf__.Any | None" = betterproto2.field(
+        5, betterproto2.TYPE_MESSAGE, optional=True
+    )
+
+
+default_message_pool.register_message("h2pcontrol", "DataPacket", DataPacket)
 
 
 @dataclass(eq=False, repr=False)
@@ -105,8 +133,18 @@ default_message_pool.register_message("h2pcontrol", "File", File)
 
 
 @dataclass(eq=False, repr=False)
+class HeartbeatPing(betterproto2.Message):
+    timestamp: "int" = betterproto2.field(2, betterproto2.TYPE_INT64)
+
+
+default_message_pool.register_message("h2pcontrol", "HeartbeatPing", HeartbeatPing)
+
+
+@dataclass(eq=False, repr=False)
 class HeartbeatPong(betterproto2.Message):
     healthy: "bool" = betterproto2.field(1, betterproto2.TYPE_BOOL)
+
+    timestamp: "int" = betterproto2.field(3, betterproto2.TYPE_INT64)
 
 
 default_message_pool.register_message("h2pcontrol", "HeartbeatPong", HeartbeatPong)
@@ -136,10 +174,12 @@ default_message_pool.register_message(
 class ServerDefinition(betterproto2.Message):
     server_name: "str" = betterproto2.field(1, betterproto2.TYPE_STRING)
 
-    version: "str" = betterproto2.field(2, betterproto2.TYPE_STRING)
+    port: "str" = betterproto2.field(2, betterproto2.TYPE_STRING)
+
+    version: "str" = betterproto2.field(3, betterproto2.TYPE_STRING)
 
     proto_files: "list[File]" = betterproto2.field(
-        3, betterproto2.TYPE_MESSAGE, repeated=True
+        4, betterproto2.TYPE_MESSAGE, repeated=True
     )
 
 
@@ -178,6 +218,18 @@ class StubResponse(betterproto2.Message):
 default_message_pool.register_message("h2pcontrol", "StubResponse", StubResponse)
 
 
+class DataManagerStub:
+    def __init__(self, channel: grpc.Channel):
+        self._channel = channel
+
+    def send_data_packets(self, messages: "Iterable[DataPacket]") -> "Empty":
+        return self._channel.stream_unary(
+            "/h2pcontrol.DataManager/SendDataPackets",
+            DataPacket.SerializeToString,
+            Empty.FromString,
+        )(iter(messages))
+
+
 class ManagerStub:
     def __init__(self, channel: grpc.Channel):
         self._channel = channel
@@ -196,15 +248,15 @@ class ManagerStub:
             RegisterResponse.FromString,
         )(message)
 
-    def heartbeat(self, message: "Empty | None" = None) -> "HeartbeatPong":
-        if message is None:
-            message = Empty()
-
-        return self._channel.unary_unary(
+    def heartbeat(
+        self, messages: "Iterable[HeartbeatPing]"
+    ) -> "Iterator[HeartbeatPong]":
+        for response in self._channel.stream_stream(
             "/h2pcontrol.Manager/Heartbeat",
-            Empty.SerializeToString,
+            HeartbeatPing.SerializeToString,
             HeartbeatPong.FromString,
-        )(message)
+        )(iter(messages)):
+            yield response
 
     def fetch_servers(self, message: "Empty | None" = None) -> "FetchServersResponse":
         if message is None:
@@ -226,6 +278,31 @@ class ManagerStub:
         )(message)
 
 
+from ..google import protobuf as _google__protobuf__
+
+
+class DataManagerBase(ServiceBase):
+    async def send_data_packets(self, messages: "AsyncIterator[DataPacket]") -> "Empty":
+        raise grpclib.GRPCError(grpclib.const.Status.UNIMPLEMENTED)
+
+    async def __rpc_send_data_packets(
+        self, stream: "grpclib.server.Stream[DataPacket, Empty]"
+    ) -> None:
+        request = stream.__aiter__()
+        response = await self.send_data_packets(request)
+        await stream.send_message(response)
+
+    def __mapping__(self) -> "dict[str, grpclib.const.Handler]":
+        return {
+            "/h2pcontrol.DataManager/SendDataPackets": grpclib.const.Handler(
+                self.__rpc_send_data_packets,
+                grpclib.const.Cardinality.STREAM_UNARY,
+                DataPacket,
+                Empty,
+            ),
+        }
+
+
 class ManagerBase(ServiceBase):
     async def get_stub(self, message: "StubRequest") -> "StubResponse":
         raise grpclib.GRPCError(grpclib.const.Status.UNIMPLEMENTED)
@@ -233,7 +310,9 @@ class ManagerBase(ServiceBase):
     async def register_server(self, message: "RegisterRequest") -> "RegisterResponse":
         raise grpclib.GRPCError(grpclib.const.Status.UNIMPLEMENTED)
 
-    async def heartbeat(self, message: "Empty") -> "HeartbeatPong":
+    async def heartbeat(
+        self, messages: "AsyncIterator[HeartbeatPing]"
+    ) -> "AsyncIterator[HeartbeatPong]":
         raise grpclib.GRPCError(grpclib.const.Status.UNIMPLEMENTED)
 
     async def fetch_servers(self, message: "Empty") -> "FetchServersResponse":
@@ -259,11 +338,14 @@ class ManagerBase(ServiceBase):
         await stream.send_message(response)
 
     async def __rpc_heartbeat(
-        self, stream: "grpclib.server.Stream[Empty, HeartbeatPong]"
+        self, stream: "grpclib.server.Stream[HeartbeatPing, HeartbeatPong]"
     ) -> None:
-        request = await stream.recv_message()
-        response = await self.heartbeat(request)
-        await stream.send_message(response)
+        request = stream.__aiter__()
+        await self._call_rpc_handler_server_stream(
+            self.heartbeat,
+            stream,
+            request,
+        )
 
     async def __rpc_fetch_servers(
         self, stream: "grpclib.server.Stream[Empty, FetchServersResponse]"
@@ -296,8 +378,8 @@ class ManagerBase(ServiceBase):
             ),
             "/h2pcontrol.Manager/Heartbeat": grpclib.const.Handler(
                 self.__rpc_heartbeat,
-                grpclib.const.Cardinality.UNARY_UNARY,
-                Empty,
+                grpclib.const.Cardinality.STREAM_STREAM,
+                HeartbeatPing,
                 HeartbeatPong,
             ),
             "/h2pcontrol.Manager/FetchServers": grpclib.const.Handler(
