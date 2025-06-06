@@ -1,12 +1,10 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
@@ -17,6 +15,8 @@ import (
 const (
 	colorPurple = "\033[37m"
 	colorNone   = "\033[0m"
+
+	protoPackagesDir = "proto_packages"
 
 	pythonBetterprotoPackage = "betterproto"
 	pythonBuildModule        = "build"
@@ -77,132 +77,84 @@ var compile = &cobra.Command{
 			os.Exit(1)
 		}
 
-		pyProjectName, err := getPyProjectName()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to get pyproject name: %v\n", err)
-			os.Exit(1)
-		}
-		if pyProjectName == name {
-			fmt.Fprintf(os.Stderr, "The proto package can not have the same name as your python package, please use a different --name:\n")
-			os.Exit(1)
-		}
+		packageDir := filepath.Join(protoPackagesDir, name)
+		err := os.MkdirAll(packageDir, 0755)
+		check(err)
+
+		// Get version from current project
+		version, err := getPyProjectVersion()
+		check(err)
+
+		// Compile proto files directly into the package directory
+		protoOutDir := filepath.Join(packageDir, name)
+		err = os.MkdirAll(protoOutDir, 0755)
+		check(err)
 
 		protocPath, err := internal.ExtractProtoc()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to extract protoc: %v\n", err)
-			os.Exit(1)
-		}
+		check(err)
 
-		// TODO: fix this rm this
-		outDir := filepath.Join(os.TempDir(), "h2pcontrol-temp")
-		os.MkdirAll(outDir, 0755)
-
-		// Compile proto files
-		fmt.Printf("%s%s\n%s", colorPurple, progressMessages[0], colorNone)
-		protoOutDir := outDir + fmt.Sprintf("/src/%s/", name)
-		os.MkdirAll(protoOutDir, 0755)
-		
+		fmt.Printf("%s%s\n%s", colorPurple, "Compiling proto files...", colorNone)
 		err = protoCompile(protocPath, protoDir, protoOutDir)
 		check(err)
 
-		fmt.Printf("Compiled files")
+		createPyProjectToml(packageDir, name, version)
 
-		// Move the pyproject.toml file, required to make a build
-		fmt.Printf("%s%s\n%s", colorPurple, progressMessages[1], colorNone)
-		copyPyProjectToml(outDir, name)
-
-		// Build the package
-		fmt.Printf("%s%s\n%s", colorPurple, progressMessages[2], colorNone)
-		err = buildPackage(outDir)
-		check(err)
-
-		// Install the dist locally
-		fmt.Printf("%s%s\n%s", colorPurple, progressMessages[3], colorNone)
-		distFile, err := findBuildPackage(outDir)
-		check(err)
-		installPackage(distFile)
+		installEditablePackage(packageDir)
 
 		fmt.Printf("%sPackage installed. %s\n", colorPurple, colorNone)
 
-		// err = os.RemoveAll(outDir)
-		// check(err)
 	},
 }
 
-func findBuildPackage(outDir string) (string, error) {
-	distDir := path.Join(outDir, distDirName)
-	files, err := os.ReadDir(distDir)
+func getPyProjectVersion() (string, error) {
+	srcFile, err := os.Open(pyprojectTomlFile)
 	if err != nil {
-		fmt.Printf("Error! %s", protoDir)
-		panic(err)
+		return "1.0", nil // Default version if file can't be read
 	}
+	defer srcFile.Close()
 
-	var distFile string
-	for _, f := range files {
-		if !f.IsDir() && (path.Ext(f.Name()) == gzipExt || path.Ext(f.Name()) == wheelExt) {
-			distFile = path.Join(distDir, f.Name())
-			break
-		}
-	}
-	if distFile == "" {
-		return "", errors.New(errNoDistFile)
-	}
-	return distFile, nil
-}
-
-func getPyProjectName() (string, error) {
-	srcFile, err := os.Open(pyprojectTomlFile)
-	check(err)
 	content, err := io.ReadAll(srcFile)
-	check(err)
+	if err != nil {
+		return "1.0", nil
+	}
 
 	var config map[string]interface{}
 	err = toml.Unmarshal(content, &config)
-	check(err)
+	if err != nil {
+		return "1.0", nil
+	}
 
 	if project, ok := config["project"].(map[string]interface{}); ok {
-		name, ok := project["name"]
-		if ok {
-			if nameStr, ok := name.(string); ok {
-				return nameStr, nil
-			}
-
+		if version, ok := project["version"].(string); ok {
+			return version, nil
 		}
 	}
-	return "", errors.New("pyproject.toml could not be found")
+	return "1.0", nil
 }
 
-func copyPyProjectToml(outDir string, name string) {
-	srcFile, err := os.Open(pyprojectTomlFile)
-	check(err)
-	content, err := io.ReadAll(srcFile)
-	check(err)
-
-	// Set the name from the cmd line arguments
-	var config map[string]interface{}
-	err = toml.Unmarshal(content, &config)
-	check(err)
-
-	if project, ok := config["project"].(map[string]interface{}); ok {
-		project["name"] = name
-
+func createPyProjectToml(packageDir string, name string, version string) {
+	config := map[string]interface{}{
+		"build-system": map[string]interface{}{
+			"requires":      []string{"setuptools", "wheel"},
+			"build-backend": "setuptools.build_meta",
+		},
+		"project": map[string]interface{}{
+			"name":            name,
+			"version":         version,
+			"description":     "Generated proto package",
+			"requires-python": ">=3.11",
+			"dependencies": []string{
+				"betterproto2-compiler>=0.4.0",
+			},
+		},
 	}
-	newContent, err := toml.Marshal(config)
+
+	content, err := toml.Marshal(config)
 	check(err)
 
-	fmt.Printf("Modified contents of %s:\n%s\n", pyprojectTomlFile, string(newContent))
-
-	destFile, err := os.Create(filepath.Join(outDir, pyprojectTomlFile))
-	check(err)
-	defer destFile.Close()
-
-	_, err = destFile.WriteString(string(newContent))
-	check(err)
-
-	err = destFile.Sync()
+	err = os.WriteFile(filepath.Join(packageDir, pyprojectTomlFile), content, 0644)
 	check(err)
 }
-
 func protoCompile(protocPath string, protoDir string, outDir string) error {
 	protoFiles, err := filepath.Glob(filepath.Join(protoDir, protoFilePattern))
 	if err != nil || len(protoFiles) == 0 {
@@ -232,30 +184,8 @@ func protoCompile(protocPath string, protoDir string, outDir string) error {
 	return nil
 }
 
-func buildPackage(outDir string) error {
-	checkCmd := exec.Command("uv", "--version")
-	if err := checkCmd.Run(); err != nil {
-		return fmt.Errorf("uv not found, please install it with: pip install uv")
-	}
-
-	buildCmd := exec.Command("uv", "build", outDir)
-	buildCmd.Stdout = os.Stdout
-	buildCmd.Stderr = os.Stderr
-	return buildCmd.Run()
-}
-
-func installPackage(distFile string) {
-	installCmd := exec.Command("uv", "pip", "install", distFile)
-	installCmd.Dir = "."
-	installCmd.Stdout = os.Stdout
-	installCmd.Stderr = os.Stderr
-	if err := installCmd.Run(); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to install package: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Add as dependency with --frozen flag
-	addCmd := exec.Command("uv", "add", "--frozen", distFile)
+func installEditablePackage(distFile string) {
+	addCmd := exec.Command("uv", "add", "--editable", distFile)
 	addCmd.Dir = "."
 	addCmd.Stdout = os.Stdout
 	addCmd.Stderr = os.Stderr
