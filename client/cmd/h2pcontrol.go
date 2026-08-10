@@ -21,16 +21,26 @@ import (
 	pb "h2pcontrol.client/pb"
 )
 
-func Run(c pb.ManagerClient, ctx context.Context, runCommand string, server *pb.ServerDefinition, proto_path string) {
+func Run(
+	c pb.ManagerClient,
+	ctx context.Context,
+	runCommand string,
+	server *pb.ServerDefinition,
+	proto_path string,
+	extraArgs []string,
+) {
 
 	// Check if the last entry is a file / check its path, then if it is a file and we have 1 arg it should just run that because
 	// we can assume it's an executable? We can also check if it's an executable?
 	args := strings.Fields(runCommand)
+
+	// Determine the path to watch for the file watcher
+	watchedPath := args[len(args)-1]
+
 	if len(args) < 2 {
 		fmt.Printf("invalid command format %s: need 'shell command'", args)
 		return
 	}
-	filepath := args[len(args)-1]
 
 	cmdCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -54,6 +64,7 @@ func Run(c pb.ManagerClient, ctx context.Context, runCommand string, server *pb.
 			args = append(args, strconv.Itoa(port))
 			server.Port = strconv.Itoa(port)
 		}
+		args = append(args, extraArgs...)
 		c, err := startCommand(cmdCtx, args)
 		if err != nil {
 			fmt.Println("Failed to start command:", err)
@@ -71,7 +82,7 @@ func Run(c pb.ManagerClient, ctx context.Context, runCommand string, server *pb.
 	}
 	defer fileWatcher.Close()
 
-	if err := fileWatcher.Watch(filepath); err != nil {
+	if err := fileWatcher.Watch(watchedPath); err != nil {
 		panic(err)
 	}
 

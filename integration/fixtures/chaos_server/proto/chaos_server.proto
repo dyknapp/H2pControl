@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package chaos_server;
+
+service ChaosService {
+    rpc crash_server(DelayRequest) returns (empty);
+    rpc exit_server(DelayRequest) returns (empty);
+    rpc abort_server(DelayRequest) returns (empty);
+    rpc hang_server(DelayRequest) returns (empty);
+}
+
+message empty {}
+
+message DelayRequest {
+    float delay = 1;
+}

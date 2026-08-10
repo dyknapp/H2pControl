@@ -1,0 +1,21 @@
+[configuration]
+# Name of the server
+server_name = "chaos_server"
+
+# For listening; never advertised
+bind_host = "0.0.0.0"
+
+# The subnet representing the LAN that H2pcontrol should be operating on.
+advertise_subnet = "192.168.5.0/24"
+
+# Uncomment this to set port, otherwise dynamically allocated.
+#port = "50052"
+
+# This is the run command, can use any language this way.  Python default.
+run = "uv run python src/chaos_server/main.py"
+
+# This is the directory where the proto files are contained
+proto = "./proto"
+
+# This is to send any incoming requests to influx, this goes through the manager 
+requests_to_influx = true

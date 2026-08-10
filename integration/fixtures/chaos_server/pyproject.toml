@@ -3,7 +3,7 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "_name_"
+name = "chaos_server"
 version = "1.0"
 description = "Project initialized by h2pcontrol cli"
 authors = [{ name = "Your Name", email = "you@example.com" }]
@@ -11,6 +11,10 @@ requires-python = ">=3.11, <4.0"
 dependencies = [
   "betterproto2==0.4.0",
   "betterproto2-compiler==0.4.0",
+  "chaos-server-proto",
   "grpcio>=1.83.0",
   "grpclib>=0.4.8",
 ]
+
+[tool.uv.sources]
+chaos-server-proto = { path = "proto_packages/chaos_server_proto", editable = true }

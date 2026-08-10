@@ -12,7 +12,7 @@ var run = &cobra.Command{
 	Use:   "run",
 	Short: "Run server",
 	Long:  "Run your server, connect to the manager and make your server available for others to call.",
-	Args:  cobra.ExactArgs(0),
+	Args:  cobra.ArbitraryArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 		client, ok := ctx.Value(clientKey).(pb.ManagerClient)
@@ -67,7 +67,7 @@ var run = &cobra.Command{
 			Version:        pyproject_config.GetString("project.version"),
 		}
 
-		Run(client, ctx, runCommand, &service, protoPath)
+		Run(client, ctx, runCommand, &service, protoPath, args)
 	},
 }
 

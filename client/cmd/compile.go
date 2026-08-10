@@ -90,7 +90,7 @@ var compile = &cobra.Command{
 		moduleName := moduleNamefromDistribution(distributionName)
 
 		packageDir := filepath.Join("proto_packages", moduleName)
-		protoOutDir := filepath.Join(packageDir, moduleName)
+		protoOutDir := filepath.Join(packageDir, "src", moduleName)
 
 		// Get version from current project
 		version, err := getPyProjectVersion()
@@ -154,7 +154,19 @@ func createPyProjectToml(packageDir string, name string, version string) {
 			"description":     "Generated proto package",
 			"requires-python": ">=3.11",
 			"dependencies": []string{
-				"betterproto2-compiler>=0.4.0",
+				"betterproto2>=0.4.0",
+			},
+		},
+		"tool": map[string]interface{}{
+			"setuptools": map[string]interface{}{
+				"package-dir": map[string]interface{}{
+					"": "src",
+				},
+				"packages": map[string]interface{}{
+					"find": map[string]interface{}{
+						"where": []string{"src"},
+					},
+				},
 			},
 		},
 	}
@@ -173,7 +185,14 @@ func protoCompile(protocPath string, protoDir string, outDir string) error {
 	}
 
 	// Verify betterproto2_compiler is installed
-	checkCmd := exec.Command(`.\.venv\Scripts\python.exe`, "-c", "import betterproto2_compiler; print('betterproto2_compiler found')")
+	syncCmd := exec.Command("uv", "sync")
+	syncCmd.Stdout = os.Stdout
+	syncCmd.Stderr = os.Stderr
+
+	if err := syncCmd.Run(); err != nil {
+		return fmt.Errorf("uv sync failed: %w", err)
+	}
+	checkCmd := exec.Command("uv", "run", "python", "-c", "import betterproto2_compiler; print('betterproto2_compiler found')")
 	checkCmd.Stdout = os.Stdout
 	checkCmd.Stderr = os.Stderr
 	if err := checkCmd.Run(); err != nil {
