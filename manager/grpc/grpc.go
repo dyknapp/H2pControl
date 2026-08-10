@@ -50,11 +50,12 @@ func (s *server) UnregisterServer(
 	}
 
 	removed := s.registry.RemoveServer(registrationID)
-	log.Printf(
-		"Unregister requested for [first 8 chars of ID = %s]: removed = %t",
-		registrationID[:8],
-		removed,
-	)
+	if removed {
+		log.Printf(
+			"Removed server with registration ID %s",
+			registrationID,
+		)
+	}
 
 	return &pb.Empty{}, nil
 }
@@ -162,10 +163,6 @@ func RunServer() {
 	pb.RegisterManagerServer(s, srv)
 	log.Printf("server listening at %v", lis.Addr())
 
-	if err := s.Serve(lis); err != nil {
-		log.Fatalf("Failed to serve: %v", err)
-	}
-
 	const (
 		heartbeatTimeout = 6 * time.Second // Assume server is dead if it doesn't respond for this long
 		reaperInterval   = 1 * time.Second // At this interval, go through and officially delete non-responsive servers
@@ -186,4 +183,8 @@ func RunServer() {
 			}
 		}
 	}()
+
+	if err := s.Serve(lis); err != nil {
+		log.Fatalf("Failed to serve: %v", err)
+	}
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -18,6 +19,9 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/phayes/freeport"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	pb "h2pcontrol.client/pb"
 )
 
@@ -93,7 +97,7 @@ func Run(
 		return
 	}
 
-	go runHeartbeat(c, registrationID)
+	go runHeartbeat(ctx, c, registrationID, server)
 
 	waitForShutdown(cmd)
 
@@ -137,16 +141,23 @@ func streamOutput(reader io.Reader, prefix string) {
 }
 
 func waitForShutdown(cmd *exec.Cmd) {
+	processExited := make(chan error, 1)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
 
 	log.Println("Server is running. Press Ctrl+C to stop.")
 
-	sig := <-signalChan
-	log.Printf("Received signal: %s. Shutting down...\n", sig)
+	go func() {
+		processExited <- cmd.Wait()
+	}()
 
-	cmd.Process.Signal(os.Interrupt)
-
+	select {
+	case sig := <-signalChan:
+		log.Printf("Received %s", sig)
+		cmd.Process.Signal(os.Interrupt)
+	case err := <-processExited:
+		log.Printf("Server process exited: %v", err)
+	}
 }
 
 func RegisterService(
@@ -190,23 +201,92 @@ func RegisterService(
 	return response.GetRegistrationId(), nil
 }
 
-func runHeartbeat(client pb.ManagerClient, registrationID string) {
+func checkServerHealth(
+	parent context.Context,
+	client healthpb.HealthClient,
+) error {
+	ctx, cancel := context.WithTimeout(parent, time.Second)
+	defer cancel()
+
+	response, err := client.Check(
+		ctx,
+		&healthpb.HealthCheckRequest{
+			Service: "",
+		},
+	)
+
+	if err != nil {
+		return err
+	}
+
+	if response.Status != healthpb.HealthCheckResponse_SERVING {
+		return fmt.Errorf("Abnormal server status: %s", response.Status)
+	}
+
+	return nil
+}
+
+// Stop sending pings after this many abnormal counts.
+// No mercy: for now let the manager's setting decide on how long to allow the server to hang, with abnormal_counts_limit=1
+const abnormal_counts_limit = 1
+
+func runHeartbeat(
+	ctx context.Context,
+	client pb.ManagerClient,
+	registrationID string,
+	server *pb.ServerDefinition,
+) {
 	// This is a bidirectional streaming heartbeat.
-	stream, err := client.Heartbeat(context.Background())
+	// Using the passed-in context is usually safer than context.Background() here
+	stream, err := client.Heartbeat(ctx)
 	if err != nil {
 		log.Fatalf("Failed to start heartbeat: %v", err)
 	}
 
+	serverAddress := net.JoinHostPort(
+		server.GetAdvertisedHost(),
+		server.GetPort(),
+	)
+
+	serverConn, err := grpc.NewClient(
+		serverAddress,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		// Log the error and exit the goroutine instead of returning err
+		log.Printf("Failed to connect to local server for health check: %v", err)
+		return
+	}
+	defer serverConn.Close()
+
+	healthClient := healthpb.NewHealthClient(serverConn)
+
 	// Send heartbeats
+	abnormal_counts := 0
 	go func() {
 		for {
-			ping := &pb.HeartbeatPing{
-				RegistrationId: registrationID,
-				Timestamp:      time.Now().Unix(),
+			health := checkServerHealth(ctx, healthClient)
+			if health != nil {
+				abnormal_counts++
+				log.Printf(
+					"%d / %d abnormal counts: status %v",
+					abnormal_counts,
+					abnormal_counts_limit,
+					health,
+				)
+			} else {
+				abnormal_counts = 0
 			}
-			if err := stream.Send(ping); err != nil {
-				log.Printf("Error sending ping: %v", err)
-				return
+
+			if abnormal_counts <= abnormal_counts_limit {
+				ping := &pb.HeartbeatPing{
+					RegistrationId: registrationID,
+					Timestamp:      time.Now().Unix(),
+				}
+				if err := stream.Send(ping); err != nil {
+					log.Printf("Error sending ping: %v", err)
+					return
+				}
 			}
 			time.Sleep(1 * time.Second)
 		}
@@ -220,7 +300,6 @@ func runHeartbeat(client pb.ManagerClient, registrationID string) {
 			log.Printf("The manager has become unavailable")
 			return
 		}
-		// log.Printf("Received heartbeat from manager: healthy=%v, ts=%d", pong.Healthy, pong.Timestamp)
 	}
 }
 

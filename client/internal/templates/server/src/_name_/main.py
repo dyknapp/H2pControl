@@ -6,11 +6,14 @@ import sys
 
 import tomllib
 from grpclib.server import Server
+from grpclib.health.service import Health
 
 
 async def main(args, port_override=None):
-    # Replace this list with your actual service implementations
-    server = Server([])
+    health_service = Health()
+
+    # Add to this list with your actual service implementations
+    server = Server([health_service])
 
     # We gather the port from the h2pcontrol.server.toml file by default, if we can not get that port we take a default port.
     bind_host = configuration.get("bind_host", "127.0.0.1")
