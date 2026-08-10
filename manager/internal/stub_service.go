@@ -38,8 +38,6 @@ func (r *StubService) GetStub(_ context.Context, in *pb.StubRequest) (*pb.StubRe
 		return nil, err
 	}
 
-	os.WriteFile("test_zip.zip", buf, 0644)
-
 	return &pb.StubResponse{
 		ZipData: buf,
 		Name:    filepath.Base(dirPath),

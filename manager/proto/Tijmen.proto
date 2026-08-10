@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-package _tijmen_;
-
-// Implement your grpc proto file here.
-// Introduction to gRPC: https://grpc.io/docs/what-is-grpc/introduction/
