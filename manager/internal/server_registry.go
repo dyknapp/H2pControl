@@ -10,14 +10,15 @@ import (
 	"sync"
 	"time"
 
-	"h2pcontrol.manager/helper"
+	"github.com/google/uuid"
 	pb "h2pcontrol.manager/pb"
 )
 
 type ServerEntry struct {
-	LastSeen  time.Time
-	Metadata  *pb.ServerDefinition
-	Heartbeat chan struct{}
+	ID             string
+	AdvertisedAddr string
+	LastSeen       time.Time
+	Metadata       *pb.ServerDefinition
 }
 
 type ServerRegistry struct {
@@ -31,33 +32,55 @@ func NewServerRegistry() *ServerRegistry {
 	}
 }
 
-func (r *ServerRegistry) RegisterServer(ctx context.Context, in *pb.RegisterRequest, addr string) (*pb.RegisterResponse, error) {
-
-	_, port, err := net.SplitHostPort(addr)
+func newRegistrationID() (string, error) {
+	id, err := uuid.NewRandom()
 	if err != nil {
-		return nil, fmt.Errorf("invalid address format: %v", err)
+		return "", fmt.Errorf("Generate registration ID: %w", err)
 	}
 
-	// Create new address with server's IP and original port
-	newAddr := net.JoinHostPort(in.Server.Ip, port)
+	return id.String(), nil
+}
+
+func (r *ServerRegistry) RegisterServer(
+	ctx context.Context,
+	in *pb.RegisterRequest) (*pb.RegisterResponse, error) {
+
+	// Use the actual service port
+	advertisedAddr := net.JoinHostPort(
+		in.Server.GetAdvertisedHost(),
+		in.Server.GetPort(),
+	)
+
+	// Generate new registration id
+	registrationID, err := newRegistrationID()
+	if err != nil {
+		return nil, err
+	}
 
 	entry := &ServerEntry{
-		LastSeen:  time.Now(),
-		Metadata:  in.Server,
-		Heartbeat: make(chan struct{}),
+		ID:             registrationID,
+		AdvertisedAddr: advertisedAddr,
+		LastSeen:       time.Now(),
+		Metadata:       in.Server,
 	}
 
 	log.Printf("Server wants to connect")
 
 	r.mu.Lock()
-	r.servers[newAddr] = entry
+	r.servers[registrationID] = entry
 	r.mu.Unlock()
 
-	log.Printf("Server connected: '%v' running '%v.%v'", newAddr, in.Server.GetServerName(), in.Server.GetVersion())
 	SaveProtoFiles(in)
+	log.Printf(
+		"Registered %s at %s [first 8 chars of id = %s]",
+		in.Server.GetServerName(),
+		advertisedAddr,
+		registrationID[:8],
+	)
 
 	return &pb.RegisterResponse{
-		Result: "Server registered successfully",
+		Result:         "Server registered successfully",
+		RegistrationId: registrationID,
 	}, nil
 }
 
@@ -66,15 +89,16 @@ func (r *ServerRegistry) FetchServers(ctx context.Context, req *pb.Empty) (*pb.F
 	defer r.mu.RUnlock()
 
 	var serverList []*pb.FetchServerDefinition
-	for addr, svc := range r.servers {
+	for _, entry := range r.servers {
 		// The port in addr is the port of the h2pcontrol server process, not of the running server
-		ip, _ := helper.SplitAddr(addr)
-		server := pb.FetchServerDefinition{
-			Name:        svc.Metadata.GetServerName(),
-			Description: svc.Metadata.GetServerName(),
-			Addr:        ip + ":" + svc.Metadata.Port,
-		}
-		serverList = append(serverList, &server)
+		serverList = append(
+			serverList,
+			&pb.FetchServerDefinition{
+				Name:        entry.Metadata.GetServerName(),
+				Description: entry.Metadata.GetServerName(),
+				Addr:        entry.AdvertisedAddr,
+			},
+		)
 	}
 
 	return &pb.FetchServersResponse{
@@ -129,19 +153,30 @@ func (r *ServerRegistry) FetchSpecificServer(ctx context.Context, req *pb.FetchS
 	return nil, fmt.Errorf("something went wrong fetching server %s", req.GetAddr())
 }
 
-func (r *ServerRegistry) RemoveServer(addr string) {
+func (r *ServerRegistry) RemoveServer(registrationID string) bool {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	delete(r.servers, addr)
 
+	_, exists := r.servers[registrationID]
+	if !exists {
+		return false
+	}
+
+	delete(r.servers, registrationID)
+	return true
 }
 
-func (r *ServerRegistry) UpdateHeartbeat(addr string) {
+func (r *ServerRegistry) UpdateHeartbeat(registrationID string) bool {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if entry, ok := r.servers[addr]; ok {
-		entry.LastSeen = time.Now()
+
+	entry, exists := r.servers[registrationID]
+
+	if !exists {
+		return false
 	}
+	entry.LastSeen = time.Now()
+	return true
 }
 
 func SaveProtoFiles(in *pb.RegisterRequest) error {
@@ -164,4 +199,22 @@ func SaveProtoFiles(in *pb.RegisterRequest) error {
 		}
 	}
 	return nil
+}
+
+func (r *ServerRegistry) RemoveExpired(
+	cutoff time.Time,
+) []*ServerEntry {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	var expired []*ServerEntry
+
+	for registrationID, entry := range r.servers {
+		if entry.LastSeen.Before(cutoff) {
+			expired = append(expired, entry)
+			delete(r.servers, registrationID)
+		}
+	}
+
+	return expired
 }

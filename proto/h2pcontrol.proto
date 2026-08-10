@@ -11,6 +11,7 @@ package h2pcontrol;
 service Manager {
   rpc GetStub(StubRequest) returns (StubResponse);
   rpc RegisterServer(RegisterRequest) returns (RegisterResponse);
+  rpc UnregisterServer(UnregisterServerRequest) returns (Empty);
   rpc Heartbeat(stream HeartbeatPing) returns (stream HeartbeatPong);
 
   rpc FetchServers(Empty) returns (FetchServersResponse);
@@ -21,6 +22,7 @@ message Empty {}
 
 
 message HeartbeatPing {
+  string registration_id = 1;
   int64 timestamp = 2;
 }
 
@@ -31,9 +33,10 @@ message HeartbeatPong {
 
 message ServerDefinition {
   string server_name = 1;
-  string port = 2;
-  string version = 3;
-  repeated File proto_files = 4;
+  string advertised_host = 2;
+  string port = 3;
+  string version = 4;
+  repeated File proto_files = 5;
 }
 
 
@@ -43,6 +46,11 @@ message RegisterRequest {
 
 message RegisterResponse {
   string result = 1;
+  string registration_id = 2;
+}
+
+message UnregisterServerRequest {
+  string registration_id = 1;
 }
 
 message FetchServerDefinition {

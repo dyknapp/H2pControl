@@ -18,6 +18,12 @@ dependencies = [
   "influxdb-client>=1.49.0",
 ]
 
+[dependency-groups]
+dev = [
+    "betterproto2-compiler==0.4.0",
+    "grpcio-tools==1.72.1",
+]
+
 
 # [tool.setuptools]
 # packages = ["h2pcontrol", "h2pcontrol.pb"]

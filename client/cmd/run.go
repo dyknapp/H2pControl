@@ -31,10 +31,30 @@ var run = &cobra.Command{
 			panic(fmt.Errorf("could not load pyproject config file: %v", err))
 		}
 
+		advertiseSubnet := h2p_config.GetString(
+			"configuration.advertise_subnet",
+		)
+
+		if advertiseSubnet == "" {
+			panic(fmt.Errorf(
+				"configuration.advertise_subnet is missing from %s",
+				h2p_config.ConfigFileUsed(),
+			))
+		}
+
+		fmt.Printf("Loaded configuration from: %s\n", h2p_config.ConfigFileUsed())
+		fmt.Printf("Advertise subnet: %q\n", advertiseSubnet)
+
+		advertisedHost, err := getIPInSubnet(advertiseSubnet)
+		if err != nil {
+			panic(fmt.Errorf("Could not determine the advertised host: %w", err))
+		}
+
 		service := pb.ServerDefinition{
-			Port:       h2p_config.GetString("configuration.port"),
-			ServerName: pyproject_config.GetString("project.name"),
-			Version:    pyproject_config.GetString("project.version"),
+			AdvertisedHost: advertisedHost,
+			Port:           h2p_config.GetString("configuration.port"),
+			ServerName:     pyproject_config.GetString("project.name"),
+			Version:        pyproject_config.GetString("project.version"),
 		}
 
 		Run(client, ctx, runCommand, &service, protoPath)

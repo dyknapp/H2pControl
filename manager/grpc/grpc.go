@@ -12,8 +12,9 @@ import (
 	"h2pcontrol.manager/internal"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/keepalive"
-	"google.golang.org/grpc/peer"
+	"google.golang.org/grpc/status"
 	pb "h2pcontrol.manager/pb"
 )
 
@@ -33,9 +34,29 @@ func (s *server) GetStub(ctx context.Context, in *pb.StubRequest) (*pb.StubRespo
 }
 
 func (s *server) RegisterServer(ctx context.Context, in *pb.RegisterRequest) (*pb.RegisterResponse, error) {
-	peerInfo, _ := peer.FromContext(ctx)
-	addr := peerInfo.Addr.String()
-	return s.registry.RegisterServer(ctx, in, addr)
+	return s.registry.RegisterServer(ctx, in)
+}
+
+func (s *server) UnregisterServer(
+	ctx context.Context,
+	in *pb.UnregisterServerRequest,
+) (*pb.Empty, error) {
+	registrationID := in.GetRegistrationId()
+	if registrationID == "" {
+		return nil, status.Error(
+			codes.InvalidArgument,
+			"Registration ID is required!",
+		)
+	}
+
+	removed := s.registry.RemoveServer(registrationID)
+	log.Printf(
+		"Unregister requested for [first 8 chars of ID = %s]: removed = %t",
+		registrationID[:8],
+		removed,
+	)
+
+	return &pb.Empty{}, nil
 }
 
 func (s *server) FetchServers(ctx context.Context, in *pb.Empty) (*pb.FetchServersResponse, error) {
@@ -55,8 +76,7 @@ func (s *server) FetchSpecificServer(ctx context.Context, in *pb.FetchSpecificSe
 // }
 
 func (s *server) Heartbeat(stream pb.Manager_HeartbeatServer) error {
-	peerInfo, _ := peer.FromContext(stream.Context())
-	addr := peerInfo.Addr.String()
+	var registrationID string
 
 	// Start a goroutine to send heartbeats to the client
 	done := make(chan struct{})
@@ -84,14 +104,37 @@ func (s *server) Heartbeat(stream pb.Manager_HeartbeatServer) error {
 	for {
 		ping, err := stream.Recv()
 		if err != nil {
-			log.Printf("Heartbeat stream closed from %v: %v", addr, err)
-			s.registry.RemoveServer(addr)
+			log.Printf(
+				"Heartbeat stream closed from %s...: %v",
+				registrationID[:8],
+				err,
+			)
+
+			if registrationID != "" {
+				s.registry.RemoveServer(registrationID)
+			}
+
 			close(done)
 			return nil
 		}
 
-		s.registry.UpdateHeartbeat(addr)
-		log.Printf("Received heartbeat from %v at %v", addr, time.Unix(ping.Timestamp, 0))
+		registrationID = ping.GetRegistrationId()
+
+		if !s.registry.UpdateHeartbeat(registrationID) {
+			return status.Errorf(
+				codes.NotFound,
+				"registration %s not found",
+				registrationID,
+			)
+		}
+
+		if registrationID != "" {
+			log.Printf(
+				"Received heartbeat from %s... at %v",
+				registrationID[:8],
+				time.Unix(ping.Timestamp, 0),
+			)
+		}
 	}
 }
 
@@ -122,4 +165,25 @@ func RunServer() {
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve: %v", err)
 	}
+
+	const (
+		heartbeatTimeout = 6 * time.Second // Assume server is dead if it doesn't respond for this long
+		reaperInterval   = 1 * time.Second // At this interval, go through and officially delete non-responsive servers
+	)
+
+	go func() {
+		ticker := time.NewTicker(reaperInterval)
+		defer ticker.Stop()
+		for now := range ticker.C {
+			cutoff := now.Add(-heartbeatTimeout)
+
+			for _, entry := range srv.registry.RemoveExpired(cutoff) {
+				log.Printf(
+					"Registration expired: %s at %s",
+					entry.Metadata.GetServerName(),
+					entry.AdvertisedAddr,
+				)
+			}
+		}
+	}()
 }

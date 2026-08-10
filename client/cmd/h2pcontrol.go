@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -78,11 +77,21 @@ func Run(c pb.ManagerClient, ctx context.Context, runCommand string, server *pb.
 
 	// Register the server after it has been started, as otherwise it might not register even though it is not available
 	// Do note, we are not checking if the python server itself has any errors.
-	RegisterService(c, ctx, server, proto_path)
+	registrationID, err := RegisterService(c, ctx, server, proto_path)
+	if err != nil {
+		return
+	}
 
-	go runHeartbeat(c)
+	go runHeartbeat(c, registrationID)
 
 	waitForShutdown(cmd)
+
+	_, err = c.UnregisterServer(
+		context.Background(),
+		&pb.UnregisterServerRequest{
+			RegistrationId: registrationID,
+		},
+	)
 }
 
 func startCommand(ctx context.Context, args []string) (*exec.Cmd, error) {
@@ -129,15 +138,19 @@ func waitForShutdown(cmd *exec.Cmd) {
 
 }
 
-func RegisterService(c pb.ManagerClient, ctx context.Context, server *pb.ServerDefinition, proto_dir_path string) {
-
-	// Get local ip address, we will send this over to the manager. If we do not do this, a server and manager both on localhost
-	// will make the server be registered on localhost, which  means other servers can't reach it.
-	ip, err := getLocalIP()
-	check(err)
-
-	server.Ip = ip
-	log.Println(server.Ip)
+func RegisterService(
+	c pb.ManagerClient,
+	ctx context.Context,
+	server *pb.ServerDefinition,
+	proto_dir_path string) (string, error) {
+	if server.GetAdvertisedHost() == "" {
+		log.Fatal("Advertised host was not cnofigured")
+	}
+	log.Printf(
+		"Advertising %s:%s",
+		server.GetAdvertisedHost(),
+		server.GetPort(),
+	)
 
 	dirEntries, err := os.ReadDir(proto_dir_path)
 	if err != nil {
@@ -156,55 +169,17 @@ func RegisterService(c pb.ManagerClient, ctx context.Context, server *pb.ServerD
 
 	log.Println("Going to register to server")
 	rpcStart := time.Now()
-	r, err := c.RegisterServer(ctx, &request)
+	response, err := c.RegisterServer(ctx, &request)
 	if err != nil {
 		log.Fatalf("Unable to connect to h2pcontrol Manager, is it running? %v", err)
 	}
 	log.Printf("RegisterServer call took %v\n", time.Since(rpcStart))
-	log.Println(r.Result)
+	log.Println(response.Result)
 
+	return response.GetRegistrationId(), nil
 }
 
-// https://stackoverflow.com/a/23558495
-func getLocalIP() (string, error) {
-	ifaces, err := net.Interfaces()
-	if err != nil {
-		return "", fmt.Errorf("failed to get network interfaces: %v", err)
-	}
-
-	for _, iface := range ifaces {
-		// Skip loopback and down interfaces
-		if iface.Flags&net.FlagLoopback != 0 || iface.Flags&net.FlagUp == 0 {
-			continue
-		}
-
-		addrs, err := iface.Addrs()
-		if err != nil {
-			continue
-		}
-
-		for _, addr := range addrs {
-			var ip net.IP
-			switch v := addr.(type) {
-			case *net.IPNet:
-				ip = v.IP
-			case *net.IPAddr:
-				ip = v.IP
-			}
-
-			// Skip loopback and IPv6 addresses
-			if ip == nil || ip.IsLoopback() || ip.To4() == nil {
-				continue
-			}
-
-			return ip.String(), nil
-		}
-	}
-
-	return "", fmt.Errorf("no suitable IP address found")
-}
-
-func runHeartbeat(client pb.ManagerClient) {
+func runHeartbeat(client pb.ManagerClient, registrationID string) {
 	// This is a bidirectional streaming heartbeat.
 	stream, err := client.Heartbeat(context.Background())
 	if err != nil {
@@ -215,7 +190,8 @@ func runHeartbeat(client pb.ManagerClient) {
 	go func() {
 		for {
 			ping := &pb.HeartbeatPing{
-				Timestamp: time.Now().Unix(),
+				RegistrationId: registrationID,
+				Timestamp:      time.Now().Unix(),
 			}
 			if err := stream.Send(ping); err != nil {
 				log.Printf("Error sending ping: %v", err)

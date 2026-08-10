@@ -4,7 +4,6 @@
 # This file has been @generated
 
 __all__ = (
-    "DataPacket",
     "Empty",
     "FetchServerDefinition",
     "FetchServersResponse",
@@ -18,13 +17,10 @@ __all__ = (
     "ServerDefinition",
     "StubRequest",
     "StubResponse",
-    "DataManagerStub",
-    "DataManagerBase",
     "ManagerStub",
     "ManagerBase",
 )
 
-import datetime
 from collections.abc import AsyncIterator, Iterable, Iterator
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -40,28 +36,6 @@ if TYPE_CHECKING:
     import grpclib.server
 
 betterproto2.check_compiler_version("0.4.0")
-
-
-@dataclass(eq=False, repr=False)
-class DataPacket(betterproto2.Message):
-    timestamp: "datetime.datetime | None" = betterproto2.field(
-        1, betterproto2.TYPE_MESSAGE, optional=True
-    )
-
-    proto_file: "str" = betterproto2.field(2, betterproto2.TYPE_STRING)
-
-    function: "str" = betterproto2.field(3, betterproto2.TYPE_STRING)
-
-    data_in: "_google__protobuf__.Any | None" = betterproto2.field(
-        4, betterproto2.TYPE_MESSAGE, optional=True
-    )
-
-    data_out: "_google__protobuf__.Any | None" = betterproto2.field(
-        5, betterproto2.TYPE_MESSAGE, optional=True
-    )
-
-
-default_message_pool.register_message("h2pcontrol", "DataPacket", DataPacket)
 
 
 @dataclass(eq=False, repr=False)
@@ -218,18 +192,6 @@ class StubResponse(betterproto2.Message):
 default_message_pool.register_message("h2pcontrol", "StubResponse", StubResponse)
 
 
-class DataManagerStub:
-    def __init__(self, channel: grpc.Channel):
-        self._channel = channel
-
-    def send_data_packets(self, messages: "Iterable[DataPacket]") -> "Empty":
-        return self._channel.stream_unary(
-            "/h2pcontrol.DataManager/SendDataPackets",
-            DataPacket.SerializeToString,
-            Empty.FromString,
-        )(iter(messages))
-
-
 class ManagerStub:
     def __init__(self, channel: grpc.Channel):
         self._channel = channel
@@ -276,31 +238,6 @@ class ManagerStub:
             FetchSpecificServerRequest.SerializeToString,
             FetchSpecificServerResponse.FromString,
         )(message)
-
-
-from ..google import protobuf as _google__protobuf__
-
-
-class DataManagerBase(ServiceBase):
-    async def send_data_packets(self, messages: "AsyncIterator[DataPacket]") -> "Empty":
-        raise grpclib.GRPCError(grpclib.const.Status.UNIMPLEMENTED)
-
-    async def __rpc_send_data_packets(
-        self, stream: "grpclib.server.Stream[DataPacket, Empty]"
-    ) -> None:
-        request = stream.__aiter__()
-        response = await self.send_data_packets(request)
-        await stream.send_message(response)
-
-    def __mapping__(self) -> "dict[str, grpclib.const.Handler]":
-        return {
-            "/h2pcontrol.DataManager/SendDataPackets": grpclib.const.Handler(
-                self.__rpc_send_data_packets,
-                grpclib.const.Cardinality.STREAM_UNARY,
-                DataPacket,
-                Empty,
-            ),
-        }
 
 
 class ManagerBase(ServiceBase):
