@@ -15,6 +15,14 @@ import (
 	templates "h2pcontrol.client/internal/templates"
 )
 
+// Normalize project name to use underscores in code (directories, filenames, protobufs)
+func convertCodeName(projectName string) string {
+	name := strings.ToLower(projectName)
+	name = strings.ReplaceAll(name, "-", "_")
+	name = strings.ReplaceAll(name, ".", "_")
+	return name
+}
+
 var init_cmd = &cobra.Command{
 	Use:   "init [server/client]",
 	Short: "Initialize an h2pcontrol server or client in the current directory.",
@@ -47,21 +55,42 @@ var init_cmd = &cobra.Command{
 }
 
 func renameAndReplace(projectType, projectName string) error {
+	codeName := convertCodeName(projectName) // normalized name version for code
+
+	sourceDir := filepath.Join("src", codeName)
+	protoFile := filepath.Join("proto", codeName+".proto")
+
 	if projectType == "server" {
-		if err := os.Rename("src/_name_", "src/"+projectName); err != nil {
+		if err := os.Rename("src/_name_", sourceDir); err != nil {
 			return err
 		}
 
-		if err := os.Rename("proto/_name_.proto", "proto/"+projectName+".proto"); err != nil {
+		if err := os.Rename("proto/_name_.proto", protoFile); err != nil {
 			return err
 		}
-		// Rename __name__ in h2pcontrol.server.toml, pyproject.toml and in proto.toml
-		replacePlaceholderValues("pyproject.toml", "_name_", projectName)
-		replacePlaceholderValues("h2pcontrol.server.toml", "_name_", projectName)
-		replacePlaceholderValues(filepath.Join("proto", projectName+".proto"), "__name__", projectName)
+
+		// Rename _name_ in h2pcontrol.server.toml, pyproject.toml and in proto.toml
+		err := replacePlaceholderValues("pyproject.toml", "_name_", projectName)
+		if err != nil {
+			return err
+		}
+		err = replacePlaceholderValues("h2pcontrol.server.toml", "_name_", projectName)
+		if err != nil {
+			return err
+		}
+		err = replacePlaceholderValues("h2pcontrol.server.toml", "_codename_", codeName)
+		if err != nil {
+			return err
+		}
+		err = replacePlaceholderValues(filepath.Join("proto", codeName+".proto"), "__name__", codeName)
+		if err != nil {
+			return err
+		}
 	} else if projectType == "client" {
-		replacePlaceholderValues("pyproject.toml", "_name_", projectName)
-		// replacePlaceholderValues("pyproject.toml", "_name_", projectName)
+		err := replacePlaceholderValues("pyproject.toml", "_name_", projectName)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -84,7 +113,7 @@ func promptProjectName() string {
 		if len(input) == 0 {
 			return errors.New("name cannot be empty")
 		}
-		match, err := regexp.MatchString("^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9_.-]*[a-zA-Z0-9])$", input)
+		match, err := regexp.MatchString("^[a-zA-Z_][a-zA-Z0-9_-]*$", input)
 		if !match || err != nil {
 			return errors.New("name must be ASCII letters/numbers, period, underscore, hyphen; must start/end with letter/number")
 		}
@@ -144,8 +173,7 @@ func replacePlaceholderValues(filePath string, placeholder string, value string)
 	}
 	content := strings.ReplaceAll(string(data), placeholder, value)
 	// https://chmodcommand.com/chmod-0644/
-	os.WriteFile(filePath, []byte(content), 0644)
-	return nil
+	return os.WriteFile(filePath, []byte(content), 0644)
 }
 
 func init() {

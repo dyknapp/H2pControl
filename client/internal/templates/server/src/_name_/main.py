@@ -13,10 +13,11 @@ async def main(port_override=None):
     server = Server([])
 
     # We gather the port from the h2pcontrol.server.toml file by default, if we can not get that port we take a default port.
-    port = port_override or configuration.get("port", 50052)
-    await server.start("127.0.0.1", port)
+    bind_host = configuration.get("bind_host", "127.0.0.1")
+    port = int(port_override or configuration.get("port", 50052))
+    await server.start(bind_host, port)
 
-    logger.info(f"Server started on 127.0.0.1:{port}")
+    logger.info(f"Server started on {bind_host}:{port}")
 
     # Use an asyncio Event to wait for shutdown signal
     should_stop = asyncio.Event()

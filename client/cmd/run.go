@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/spf13/cobra"
 	pb "h2pcontrol.client/pb"
@@ -50,10 +51,19 @@ var run = &cobra.Command{
 			panic(fmt.Errorf("Could not determine the advertised host: %w", err))
 		}
 
+		serverName := h2p_config.GetString("configuration.server_name")
+		if serverName == "" {
+			serverName = pyproject_config.GetString("project.name")
+			log.Printf(
+				"configuration.server_name is missing; using project.name %q",
+				serverName,
+			)
+		}
+
 		service := pb.ServerDefinition{
 			AdvertisedHost: advertisedHost,
 			Port:           h2p_config.GetString("configuration.port"),
-			ServerName:     pyproject_config.GetString("project.name"),
+			ServerName:     serverName,
 			Version:        pyproject_config.GetString("project.version"),
 		}
 

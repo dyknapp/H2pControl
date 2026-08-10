@@ -6,6 +6,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 	"github.com/spf13/cobra"
@@ -49,7 +51,6 @@ var progressMessages = [...]string{
 
 const (
 	errProtoDirRequired = "Error: --proto-dir is required"
-	errNameRequired     = "Error: --name is required"
 	errNoProtoFiles     = "no .proto files found in %s"
 	errProtocFailed     = "failed to run protoc command: %v"
 	errPythonBuild      = "uv build failed: %v"
@@ -60,7 +61,7 @@ const (
 
 var (
 	protoDir string
-	name     string
+	stubName string
 )
 
 var compile = &cobra.Command{
@@ -72,21 +73,30 @@ var compile = &cobra.Command{
 			fmt.Fprintf(os.Stderr, "Error: --proto-dir is required\n")
 			os.Exit(1)
 		}
-		if name == "" {
-			fmt.Fprintf(os.Stderr, "Error: --name is required\n")
-			os.Exit(1)
+
+		h2p_config, err := LoadConfig("h2pcontrol.server.toml")
+		if err != nil {
+			panic(fmt.Errorf("could not load h2pcontrol.server file: %v", err))
+		}
+		if stubName == "" {
+			serverName := h2p_config.GetString("configuration.server_name")
+			if serverName == "" {
+				panic(fmt.Errorf("could not parse h2pcontrol.server.toml server name: %v", err))
+			}
+			stubName = serverName + "-proto"
 		}
 
-		packageDir := filepath.Join(protoPackagesDir, name)
-		err := os.MkdirAll(packageDir, 0755)
-		check(err)
+		distributionName := normalizeDistributionName(stubName)
+		moduleName := moduleNamefromDistribution(distributionName)
+
+		packageDir := filepath.Join("proto_packages", moduleName)
+		protoOutDir := filepath.Join(packageDir, moduleName)
 
 		// Get version from current project
 		version, err := getPyProjectVersion()
 		check(err)
 
 		// Compile proto files directly into the package directory
-		protoOutDir := filepath.Join(packageDir, name)
 		err = os.MkdirAll(protoOutDir, 0755)
 		check(err)
 
@@ -97,7 +107,7 @@ var compile = &cobra.Command{
 		err = protoCompile(protocPath, protoDir, protoOutDir)
 		check(err)
 
-		createPyProjectToml(packageDir, name, version)
+		createPyProjectToml(packageDir, distributionName, version)
 
 		installEditablePackage(packageDir)
 
@@ -155,6 +165,7 @@ func createPyProjectToml(packageDir string, name string, version string) {
 	err = os.WriteFile(filepath.Join(packageDir, pyprojectTomlFile), content, 0644)
 	check(err)
 }
+
 func protoCompile(protocPath string, protoDir string, outDir string) error {
 	protoFiles, err := filepath.Glob(filepath.Join(protoDir, protoFilePattern))
 	if err != nil || len(protoFiles) == 0 {
@@ -162,7 +173,7 @@ func protoCompile(protocPath string, protoDir string, outDir string) error {
 	}
 
 	// Verify betterproto2_compiler is installed
-	checkCmd := exec.Command("python", "-c", "import betterproto2_compiler; print('betterproto2_compiler found')")
+	checkCmd := exec.Command(`.\.venv\Scripts\python.exe`, "-c", "import betterproto2_compiler; print('betterproto2_compiler found')")
 	checkCmd.Stdout = os.Stdout
 	checkCmd.Stderr = os.Stderr
 	if err := checkCmd.Run(); err != nil {
@@ -202,12 +213,20 @@ func check(err error) {
 	}
 }
 
+func normalizeDistributionName(name string) string {
+	name = strings.ToLower(name)
+	return regexp.MustCompile(`[-_.]+`).ReplaceAllString(name, "-")
+}
+
+func moduleNamefromDistribution(name string) string {
+	return strings.ReplaceAll(normalizeDistributionName(name), "-", "_")
+}
+
 func init() {
 	compile.Flags().StringVar(&protoDir, "proto-dir", "", "Directory containing proto files (required)")
-	compile.Flags().StringVar(&name, "name", "", "Name of the package (required)")
+	compile.Flags().StringVar(&stubName, "stubname", "", "Name of the package (optional override)")
 
 	compile.MarkFlagRequired("proto-dir")
-	compile.MarkFlagRequired("name")
 
 	rootCmd.AddCommand(compile)
 }

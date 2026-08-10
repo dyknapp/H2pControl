@@ -1,6 +1,21 @@
 [configuration]
+# Name of the server
+server_name = "_name_"
+
+# For listening; never advertised
+bind_host = "0.0.0.0"
+
+# The subnet representing the LAN that H2pcontrol should be operating on.
+advertise_subnet = "192.168.5.0/24"
+
 # Uncomment this to set port, otherwise dynamically allocated.
 #port = "50052"
-run = "uv run python src/_name_/main.py" # This is the run command, can use any language this way
-proto = "./proto" # This is the directory where the proto files are contained
-requests_to_influx = true # This is to send any incoming requests to influx, this goes through the manager 
+
+# This is the run command, can use any language this way.  Python default.
+run = "uv run python src/_codename_/main.py"
+
+# This is the directory where the proto files are contained
+proto = "./proto"
+
+# This is to send any incoming requests to influx, this goes through the manager 
+requests_to_influx = true
