@@ -74,6 +74,16 @@ class ChaosServiceStub:
             Empty.FromString,
         )(message)
 
+    def do_nothing(self, message: "Empty | None" = None) -> "Empty":
+        if message is None:
+            message = Empty()
+
+        return self._channel.unary_unary(
+            "/chaos_server.ChaosService/do_nothing",
+            Empty.SerializeToString,
+            Empty.FromString,
+        )(message)
+
 
 class ChaosServiceBase(ServiceBase):
     async def crash_server(self, message: "DelayRequest") -> "Empty":
@@ -86,6 +96,9 @@ class ChaosServiceBase(ServiceBase):
         raise grpclib.GRPCError(grpclib.const.Status.UNIMPLEMENTED)
 
     async def hang_server(self, message: "DelayRequest") -> "Empty":
+        raise grpclib.GRPCError(grpclib.const.Status.UNIMPLEMENTED)
+
+    async def do_nothing(self, message: "Empty") -> "Empty":
         raise grpclib.GRPCError(grpclib.const.Status.UNIMPLEMENTED)
 
     async def __rpc_crash_server(
@@ -116,6 +129,13 @@ class ChaosServiceBase(ServiceBase):
         response = await self.hang_server(request)
         await stream.send_message(response)
 
+    async def __rpc_do_nothing(
+        self, stream: "grpclib.server.Stream[Empty, Empty]"
+    ) -> None:
+        request = await stream.recv_message()
+        response = await self.do_nothing(request)
+        await stream.send_message(response)
+
     def __mapping__(self) -> "dict[str, grpclib.const.Handler]":
         return {
             "/chaos_server.ChaosService/crash_server": grpclib.const.Handler(
@@ -140,6 +160,12 @@ class ChaosServiceBase(ServiceBase):
                 self.__rpc_hang_server,
                 grpclib.const.Cardinality.UNARY_UNARY,
                 DelayRequest,
+                Empty,
+            ),
+            "/chaos_server.ChaosService/do_nothing": grpclib.const.Handler(
+                self.__rpc_do_nothing,
+                grpclib.const.Cardinality.UNARY_UNARY,
+                Empty,
                 Empty,
             ),
         }

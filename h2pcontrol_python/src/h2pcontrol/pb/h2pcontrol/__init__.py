@@ -17,6 +17,7 @@ __all__ = (
     "ServerDefinition",
     "StubRequest",
     "StubResponse",
+    "UnregisterServerRequest",
     "ManagerStub",
     "ManagerBase",
 )
@@ -108,6 +109,8 @@ default_message_pool.register_message("h2pcontrol", "File", File)
 
 @dataclass(eq=False, repr=False)
 class HeartbeatPing(betterproto2.Message):
+    registration_id: "str" = betterproto2.field(1, betterproto2.TYPE_STRING)
+
     timestamp: "int" = betterproto2.field(2, betterproto2.TYPE_INT64)
 
 
@@ -138,6 +141,10 @@ default_message_pool.register_message("h2pcontrol", "RegisterRequest", RegisterR
 class RegisterResponse(betterproto2.Message):
     result: "str" = betterproto2.field(1, betterproto2.TYPE_STRING)
 
+    registration_id: "str" = betterproto2.field(2, betterproto2.TYPE_STRING)
+
+    proto_sha256: "str" = betterproto2.field(3, betterproto2.TYPE_STRING)
+
 
 default_message_pool.register_message(
     "h2pcontrol", "RegisterResponse", RegisterResponse
@@ -148,12 +155,14 @@ default_message_pool.register_message(
 class ServerDefinition(betterproto2.Message):
     server_name: "str" = betterproto2.field(1, betterproto2.TYPE_STRING)
 
-    port: "str" = betterproto2.field(2, betterproto2.TYPE_STRING)
+    advertised_host: "str" = betterproto2.field(2, betterproto2.TYPE_STRING)
 
-    version: "str" = betterproto2.field(3, betterproto2.TYPE_STRING)
+    port: "str" = betterproto2.field(3, betterproto2.TYPE_STRING)
+
+    version: "str" = betterproto2.field(4, betterproto2.TYPE_STRING)
 
     proto_files: "list[File]" = betterproto2.field(
-        4, betterproto2.TYPE_MESSAGE, repeated=True
+        5, betterproto2.TYPE_MESSAGE, repeated=True
     )
 
 
@@ -164,13 +173,13 @@ default_message_pool.register_message(
 
 @dataclass(eq=False, repr=False)
 class StubRequest(betterproto2.Message):
-    Server_name: "str" = betterproto2.field(1, betterproto2.TYPE_STRING)
+    server_name: "str" = betterproto2.field(1, betterproto2.TYPE_STRING)
 
     version: "str" = betterproto2.field(2, betterproto2.TYPE_STRING)
 
     language: "str" = betterproto2.field(3, betterproto2.TYPE_STRING)
     """
-    e.g., "python", "java"
+    e.g., "python", "java".  Only Python is supported at the moment.
     """
 
 
@@ -179,17 +188,26 @@ default_message_pool.register_message("h2pcontrol", "StubRequest", StubRequest)
 
 @dataclass(eq=False, repr=False)
 class StubResponse(betterproto2.Message):
-    name: "str" = betterproto2.field(1, betterproto2.TYPE_STRING)
+    filename: "str" = betterproto2.field(1, betterproto2.TYPE_STRING)
 
-    zip_data: "bytes" = betterproto2.field(2, betterproto2.TYPE_BYTES)
+    wheel_data: "bytes" = betterproto2.field(2, betterproto2.TYPE_BYTES)
 
-    checksum: "str" = betterproto2.field(3, betterproto2.TYPE_STRING)
-    """
-    Optional checksum (e.g., SHA256)
-    """
+    wheel_sha256: "str" = betterproto2.field(3, betterproto2.TYPE_STRING)
+
+    proto_sha256: "str" = betterproto2.field(4, betterproto2.TYPE_STRING)
 
 
 default_message_pool.register_message("h2pcontrol", "StubResponse", StubResponse)
+
+
+@dataclass(eq=False, repr=False)
+class UnregisterServerRequest(betterproto2.Message):
+    registration_id: "str" = betterproto2.field(1, betterproto2.TYPE_STRING)
+
+
+default_message_pool.register_message(
+    "h2pcontrol", "UnregisterServerRequest", UnregisterServerRequest
+)
 
 
 class ManagerStub:
@@ -208,6 +226,13 @@ class ManagerStub:
             "/h2pcontrol.Manager/RegisterServer",
             RegisterRequest.SerializeToString,
             RegisterResponse.FromString,
+        )(message)
+
+    def unregister_server(self, message: "UnregisterServerRequest") -> "Empty":
+        return self._channel.unary_unary(
+            "/h2pcontrol.Manager/UnregisterServer",
+            UnregisterServerRequest.SerializeToString,
+            Empty.FromString,
         )(message)
 
     def heartbeat(
@@ -247,6 +272,9 @@ class ManagerBase(ServiceBase):
     async def register_server(self, message: "RegisterRequest") -> "RegisterResponse":
         raise grpclib.GRPCError(grpclib.const.Status.UNIMPLEMENTED)
 
+    async def unregister_server(self, message: "UnregisterServerRequest") -> "Empty":
+        raise grpclib.GRPCError(grpclib.const.Status.UNIMPLEMENTED)
+
     async def heartbeat(
         self, messages: "AsyncIterator[HeartbeatPing]"
     ) -> "AsyncIterator[HeartbeatPong]":
@@ -272,6 +300,13 @@ class ManagerBase(ServiceBase):
     ) -> None:
         request = await stream.recv_message()
         response = await self.register_server(request)
+        await stream.send_message(response)
+
+    async def __rpc_unregister_server(
+        self, stream: "grpclib.server.Stream[UnregisterServerRequest, Empty]"
+    ) -> None:
+        request = await stream.recv_message()
+        response = await self.unregister_server(request)
         await stream.send_message(response)
 
     async def __rpc_heartbeat(
@@ -312,6 +347,12 @@ class ManagerBase(ServiceBase):
                 grpclib.const.Cardinality.UNARY_UNARY,
                 RegisterRequest,
                 RegisterResponse,
+            ),
+            "/h2pcontrol.Manager/UnregisterServer": grpclib.const.Handler(
+                self.__rpc_unregister_server,
+                grpclib.const.Cardinality.UNARY_UNARY,
+                UnregisterServerRequest,
+                Empty,
             ),
             "/h2pcontrol.Manager/Heartbeat": grpclib.const.Handler(
                 self.__rpc_heartbeat,

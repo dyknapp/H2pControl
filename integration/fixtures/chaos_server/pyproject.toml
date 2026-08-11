@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "chaos_server"
-version = "1.0"
+version = "1.1"
 description = "Project initialized by h2pcontrol cli"
 authors = [{ name = "Your Name", email = "you@example.com" }]
 requires-python = ">=3.11, <4.0"

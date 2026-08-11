@@ -38,9 +38,10 @@ func (r *StubService) GetStub(_ context.Context, in *pb.StubRequest) (*pb.StubRe
 		return nil, err
 	}
 
+	// TODO: add hashses
 	return &pb.StubResponse{
-		ZipData: buf,
-		Name:    filepath.Base(dirPath),
+		WheelData: buf,
+		Filename:  filepath.Base(dirPath),
 	}, nil
 }
 

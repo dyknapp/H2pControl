@@ -147,8 +147,18 @@ func RunServer() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
+	catalogPath, err := internal.DefaultProtoCatalogPath()
+	if err != nil {
+		log.Fatalf("proto catalog path finder error : %v", err)
+	}
+
+	catalog, err := internal.NewProtoCatalog(catalogPath)
+	if err != nil {
+		log.Fatalf("proto catalog initialization error : %v", err)
+	}
+
 	srv := &server{
-		registry:     internal.NewServerRegistry(),
+		registry:     internal.NewServerRegistry(catalog),
 		stub_service: internal.NewStubService(),
 	}
 
