@@ -47,16 +47,20 @@ func PrettyPrintServers(resp *pb.FetchServersResponse) {
 	fmt.Println("Registered Servers:")
 	for _, server := range resp.Servers {
 		fmt.Printf("  %s:\n", server.Name)
-		fmt.Printf("    Description: %s\n", server.GetDescription())
-		fmt.Printf("    Addr       : %s\n", server.GetAddr())
+		fmt.Printf("    Version      : %s\n", server.GetVersion())
+		fmt.Printf("    Description  : %s\n", server.GetDescription())
+		fmt.Printf("    Addr         : %s\n", server.GetAddr())
+		fmt.Printf("    Proto SHA256 : %s\n", server.GetProtoSha256())
 		fmt.Println()
 	}
 }
 
 func PrettyPrintServer(resp *pb.FetchSpecificServerResponse) {
 	fmt.Printf("  %s:\n", resp.ServerDefinition.Name)
-	fmt.Printf("    Description: %s\n", resp.ServerDefinition.GetDescription())
-	fmt.Printf("    Addr       : %s\n", resp.ServerDefinition.GetAddr())
-	fmt.Printf("    Proto      : \n\n%s\n", resp.GetProto())
+	fmt.Printf("    Version      : %s\n", resp.ServerDefinition.GetVersion())
+	fmt.Printf("    Description  : %s\n", resp.ServerDefinition.GetDescription())
+	fmt.Printf("    Addr         : %s\n", resp.ServerDefinition.GetAddr())
+	fmt.Printf("    Proto SHA256 : %s\n", resp.ServerDefinition.GetProtoSha256())
+	fmt.Printf("    Proto        : \n\n%s\n", resp.GetProto())
 	fmt.Println()
 }

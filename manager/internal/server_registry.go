@@ -303,6 +303,8 @@ func (r *ServerRegistry) FetchServers(ctx context.Context, req *pb.Empty) (*pb.F
 				Name:        entry.Metadata.GetServerName(),
 				Description: entry.Metadata.GetServerName(),
 				Addr:        entry.AdvertisedAddr,
+				Version:     entry.Metadata.GetVersion(),
+				ProtoSha256: entry.ProtoSha256,
 			},
 		)
 	}

@@ -157,9 +157,10 @@ func RunServer() {
 		log.Fatalf("proto catalog initialization error : %v", err)
 	}
 
+	registry := internal.NewServerRegistry(catalog)
 	srv := &server{
-		registry:     internal.NewServerRegistry(catalog),
-		stub_service: internal.NewStubService(),
+		registry:     registry,
+		stub_service: internal.NewStubService(registry),
 	}
 
 	serverOpts := []grpc.ServerOption{

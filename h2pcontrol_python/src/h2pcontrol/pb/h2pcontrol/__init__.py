@@ -55,6 +55,10 @@ class FetchServerDefinition(betterproto2.Message):
 
     addr: "str" = betterproto2.field(3, betterproto2.TYPE_STRING)
 
+    version: "str" = betterproto2.field(4, betterproto2.TYPE_STRING)
+
+    proto_sha256: "str" = betterproto2.field(5, betterproto2.TYPE_STRING)
+
 
 default_message_pool.register_message(
     "h2pcontrol", "FetchServerDefinition", FetchServerDefinition

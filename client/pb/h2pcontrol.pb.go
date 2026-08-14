@@ -390,6 +390,8 @@ type FetchServerDefinition struct {
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
 	Addr          string                 `protobuf:"bytes,3,opt,name=addr,proto3" json:"addr,omitempty"`
+	Version       string                 `protobuf:"bytes,4,opt,name=version,proto3" json:"version,omitempty"`
+	ProtoSha256   string                 `protobuf:"bytes,5,opt,name=proto_sha256,json=protoSha256,proto3" json:"proto_sha256,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -441,6 +443,20 @@ func (x *FetchServerDefinition) GetDescription() string {
 func (x *FetchServerDefinition) GetAddr() string {
 	if x != nil {
 		return x.Addr
+	}
+	return ""
+}
+
+func (x *FetchServerDefinition) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *FetchServerDefinition) GetProtoSha256() string {
+	if x != nil {
+		return x.ProtoSha256
 	}
 	return ""
 }
@@ -793,11 +809,13 @@ const file_h2pcontrol_proto_rawDesc = "" +
 	"\x0fregistration_id\x18\x02 \x01(\tR\x0eregistrationId\x12!\n" +
 	"\fproto_sha256\x18\x03 \x01(\tR\vprotoSha256\"B\n" +
 	"\x17UnregisterServerRequest\x12'\n" +
-	"\x0fregistration_id\x18\x01 \x01(\tR\x0eregistrationId\"a\n" +
+	"\x0fregistration_id\x18\x01 \x01(\tR\x0eregistrationId\"\x9e\x01\n" +
 	"\x15FetchServerDefinition\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x12\n" +
-	"\x04addr\x18\x03 \x01(\tR\x04addr\"S\n" +
+	"\x04addr\x18\x03 \x01(\tR\x04addr\x12\x18\n" +
+	"\aversion\x18\x04 \x01(\tR\aversion\x12!\n" +
+	"\fproto_sha256\x18\x05 \x01(\tR\vprotoSha256\"S\n" +
 	"\x14FetchServersResponse\x12;\n" +
 	"\aservers\x18\x01 \x03(\v2!.h2pcontrol.FetchServerDefinitionR\aservers\"0\n" +
 	"\x1aFetchSpecificServerRequest\x12\x12\n" +

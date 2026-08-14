@@ -3,6 +3,7 @@ module h2pcontrol.manager
 go 1.23.7
 
 require (
+	github.com/BurntSushi/toml v1.5.0
 	google.golang.org/grpc v1.71.1
 	google.golang.org/protobuf v1.36.4
 )
